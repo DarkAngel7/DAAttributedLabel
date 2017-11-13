@@ -1,8 +1,12 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="7706" systemVersion="14D136" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="whP-gf-Uak">
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="13529" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES" initialViewController="whP-gf-Uak">
+    <device id="retina4_7" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="13527"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
         <!--View Controller-->
@@ -14,14 +18,58 @@
                         <viewControllerLayoutGuide type="bottom" id="Mvr-aV-6Um"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="TpU-gO-2f1">
-                        <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
+                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="10" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BMo-22-hMN" customClass="DAAttributedLabel">
+                                <rect key="frame" x="20" y="50" width="335" height="203"/>
+                                <color key="backgroundColor" red="0.71261807312029446" green="0.89803916215896606" blue="0.76947831580489101" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <mutableString key="text">A custom AttributedLabel using TestKit to replace UILabel. You can customization truncationToken, lineSpacing and backgroundColor, and also you can add custom view attachments.(https://github.com/DarkAngel7) A custom AttributedLabel using TestKit to replace UILabel. You can customization truncationToken, lineSpacing and backgroundColor, and also you can add custom view attachments.</mutableString>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="string" keyPath="truncationToken" value="...展开"/>
+                                    <userDefinedRuntimeAttribute type="boolean" keyPath="automaticLinkDetectionEnabled" value="YES"/>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="lineSpacing">
+                                        <real key="value" value="5"/>
+                                    </userDefinedRuntimeAttribute>
+                                    <userDefinedRuntimeAttribute type="boolean" keyPath="copyable" value="YES"/>
+                                </userDefinedRuntimeAttributes>
+                            </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xKD-RA-E7L">
+                                <rect key="frame" x="171.5" y="273" width="31" height="30"/>
+                                <state key="normal" title="折叠"/>
+                                <connections>
+                                    <action selector="fold:" destination="whP-gf-Uak" eventType="touchUpInside" id="zpv-Kd-lKe"/>
+                                </connections>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="I9v-cV-FEc">
+                                <rect key="frame" x="115" y="381" width="144" height="30"/>
+                                <state key="normal" title="添加view attachment"/>
+                                <connections>
+                                    <action selector="addCustomViewAttachment:" destination="whP-gf-Uak" eventType="touchUpInside" id="E8K-QJ-dpv"/>
+                                </connections>
+                            </button>
+                        </subviews>
+                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="BMo-22-hMN" firstAttribute="top" secondItem="uEw-UM-LJ8" secondAttribute="bottom" constant="30" id="CSe-ES-UUG"/>
+                            <constraint firstItem="BMo-22-hMN" firstAttribute="leading" secondItem="TpU-gO-2f1" secondAttribute="leading" constant="20" id="FZr-wI-DwF"/>
+                            <constraint firstAttribute="trailing" secondItem="BMo-22-hMN" secondAttribute="trailing" constant="20" id="O5y-vw-JAN"/>
+                            <constraint firstItem="I9v-cV-FEc" firstAttribute="top" secondItem="xKD-RA-E7L" secondAttribute="bottom" constant="78" id="VLC-nG-A3e"/>
+                            <constraint firstItem="xKD-RA-E7L" firstAttribute="top" secondItem="BMo-22-hMN" secondAttribute="bottom" constant="20" id="XP3-JJ-w4D"/>
+                            <constraint firstItem="I9v-cV-FEc" firstAttribute="centerX" secondItem="TpU-gO-2f1" secondAttribute="centerX" id="b5X-hK-QiV"/>
+                            <constraint firstItem="xKD-RA-E7L" firstAttribute="centerX" secondItem="TpU-gO-2f1" secondAttribute="centerX" id="bRd-Ul-Gny"/>
+                        </constraints>
                     </view>
+                    <connections>
+                        <outlet property="attributedLabel" destination="BMo-22-hMN" id="Y2j-pg-1aM"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="tc2-Qw-aMS" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="305" y="433"/>
+            <point key="canvasLocation" x="304.80000000000001" y="432.23388305847078"/>
         </scene>
     </scenes>
 </document>

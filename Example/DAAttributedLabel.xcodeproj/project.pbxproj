@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3BA90E9CBFB988C0ABA78C3C /* libPods-DAAttributedLabel_Example.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 39656DC2534F854B12A05805 /* libPods-DAAttributedLabel_Example.a */; };
 		6003F58E195388D20070C39A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58D195388D20070C39A /* Foundation.framework */; };
 		6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F58F195388D20070C39A /* CoreGraphics.framework */; };
 		6003F592195388D20070C39A /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6003F591195388D20070C39A /* UIKit.framework */; };
@@ -21,9 +22,8 @@
 		6003F5BA195388D20070C39A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 6003F5B8195388D20070C39A /* InfoPlist.strings */; };
 		6003F5BC195388D20070C39A /* Tests.m in Sources */ = {isa = PBXBuildFile; fileRef = 6003F5BB195388D20070C39A /* Tests.m */; };
 		71719F9F1E33DC2100824A3D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 71719F9D1E33DC2100824A3D /* LaunchScreen.storyboard */; };
-		765324A6623997801CB64C42 /* Pods_DAAttributedLabel_Example.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E8264EF1891D89E9785D8F9 /* Pods_DAAttributedLabel_Example.framework */; };
 		873B8AEB1B1F5CCA007FD442 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 873B8AEA1B1F5CCA007FD442 /* Main.storyboard */; };
-		C9DA3B266A8DBCFD0D33B0DC /* Pods_DAAttributedLabel_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E69B0164727C0978F8453AE2 /* Pods_DAAttributedLabel_Tests.framework */; };
+		C6F1865B6D5758D5A5ACE836 /* libPods-DAAttributedLabel_Tests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F44BFFCD16AE992A13AE89FD /* libPods-DAAttributedLabel_Tests.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,9 +37,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		2E8264EF1891D89E9785D8F9 /* Pods_DAAttributedLabel_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DAAttributedLabel_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		39656DC2534F854B12A05805 /* libPods-DAAttributedLabel_Example.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DAAttributedLabel_Example.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AE5FAEEC12B0C0308D73519 /* Pods-DAAttributedLabel_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DAAttributedLabel_Tests.release.xcconfig"; path = "Pods/Target Support Files/Pods-DAAttributedLabel_Tests/Pods-DAAttributedLabel_Tests.release.xcconfig"; sourceTree = "<group>"; };
-		3E253FB006F3F3156CA5C977 /* DAAttributedLabel.podspec */ = {isa = PBXFileReference; includeInIndex = 1; name = DAAttributedLabel.podspec; path = ../DAAttributedLabel.podspec; sourceTree = "<group>"; };
+		3E253FB006F3F3156CA5C977 /* DAAttributedLabel.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = DAAttributedLabel.podspec; path = ../DAAttributedLabel.podspec; sourceTree = "<group>"; };
 		4524E80F2C322B2735A32DBF /* Pods-DAAttributedLabel_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DAAttributedLabel_Example.debug.xcconfig"; path = "Pods/Target Support Files/Pods-DAAttributedLabel_Example/Pods-DAAttributedLabel_Example.debug.xcconfig"; sourceTree = "<group>"; };
 		6003F58A195388D20070C39A /* DAAttributedLabel_Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DAAttributedLabel_Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6003F58D195388D20070C39A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -63,10 +63,10 @@
 		71719F9E1E33DC2100824A3D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7F910CA46D16C6DE8992E9DC /* Pods-DAAttributedLabel_Example.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DAAttributedLabel_Example.release.xcconfig"; path = "Pods/Target Support Files/Pods-DAAttributedLabel_Example/Pods-DAAttributedLabel_Example.release.xcconfig"; sourceTree = "<group>"; };
 		873B8AEA1B1F5CCA007FD442 /* Main.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = Main.storyboard; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		8CDCCE21C55D68EBB526FB79 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
+		8CDCCE21C55D68EBB526FB79 /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		C570F873CBAC89C7F9470CFE /* Pods-DAAttributedLabel_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DAAttributedLabel_Tests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-DAAttributedLabel_Tests/Pods-DAAttributedLabel_Tests.debug.xcconfig"; sourceTree = "<group>"; };
-		DEB10F84DA6BCFEB47FF0BAB /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; name = README.md; path = ../README.md; sourceTree = "<group>"; };
-		E69B0164727C0978F8453AE2 /* Pods_DAAttributedLabel_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_DAAttributedLabel_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DEB10F84DA6BCFEB47FF0BAB /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
+		F44BFFCD16AE992A13AE89FD /* libPods-DAAttributedLabel_Tests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DAAttributedLabel_Tests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,7 +77,7 @@
 				6003F590195388D20070C39A /* CoreGraphics.framework in Frameworks */,
 				6003F592195388D20070C39A /* UIKit.framework in Frameworks */,
 				6003F58E195388D20070C39A /* Foundation.framework in Frameworks */,
-				765324A6623997801CB64C42 /* Pods_DAAttributedLabel_Example.framework in Frameworks */,
+				3BA90E9CBFB988C0ABA78C3C /* libPods-DAAttributedLabel_Example.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,7 +88,7 @@
 				6003F5B0195388D20070C39A /* XCTest.framework in Frameworks */,
 				6003F5B2195388D20070C39A /* UIKit.framework in Frameworks */,
 				6003F5B1195388D20070C39A /* Foundation.framework in Frameworks */,
-				C9DA3B266A8DBCFD0D33B0DC /* Pods_DAAttributedLabel_Tests.framework in Frameworks */,
+				C6F1865B6D5758D5A5ACE836 /* libPods-DAAttributedLabel_Tests.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -134,8 +134,8 @@
 				6003F58F195388D20070C39A /* CoreGraphics.framework */,
 				6003F591195388D20070C39A /* UIKit.framework */,
 				6003F5AF195388D20070C39A /* XCTest.framework */,
-				2E8264EF1891D89E9785D8F9 /* Pods_DAAttributedLabel_Example.framework */,
-				E69B0164727C0978F8453AE2 /* Pods_DAAttributedLabel_Tests.framework */,
+				39656DC2534F854B12A05805 /* libPods-DAAttributedLabel_Example.a */,
+				F44BFFCD16AE992A13AE89FD /* libPods-DAAttributedLabel_Tests.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -248,7 +248,7 @@
 			attributes = {
 				CLASSPREFIX = DA;
 				LastUpgradeCheck = 0720;
-				ORGANIZATIONNAME = darkangel7;
+				ORGANIZATIONNAME = DarkAngel;
 				TargetAttributes = {
 					6003F5AD195388D20070C39A = {
 						TestTargetID = 6003F589195388D20070C39A;

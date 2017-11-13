@@ -11,6 +11,8 @@ To run the example project, clone the repo, and run `pod install` from the Examp
 
 ## Requirements
 
+iOS 8.0 +.
+
 ## Installation
 
 DAAttributedLabel is available through [CocoaPods](http://cocoapods.org). To install
@@ -22,7 +24,7 @@ pod 'DAAttributedLabel'
 
 ## Author
 
-darkangel7, 535596858@qq.com
+DarkAngel7, 535596858@qq.com
 
 ## License
 
