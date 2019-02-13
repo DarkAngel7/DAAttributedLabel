@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/cocoapods/l/DAAttributedLabel.svg?style=flat)](http://cocoapods.org/pods/DAAttributedLabel)
 [![Platform](https://img.shields.io/cocoapods/p/DAAttributedLabel.svg?style=flat)](http://cocoapods.org/pods/DAAttributedLabel)
 
-A custom AttributedLabel using TestKit to replace UILabel.
+A custom AttributedLabel using TextKit to replace UILabel.
 You can customization truncationToken, lineSpacing and backgroundColor, and also you can add custom view attachments.
 
 ## Example
