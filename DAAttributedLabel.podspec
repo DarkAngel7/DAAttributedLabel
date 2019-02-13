@@ -1,9 +1,9 @@
 Pod::Spec.new do |s|
   s.name             = 'DAAttributedLabel'
   s.version          = '0.1.0'
-  s.summary          = 'A custom AttributedLabel using TestKit to replace UILabel.'
+  s.summary          = 'A custom AttributedLabel using TextKit to replace UILabel.'
   s.description      = <<-DESC
-  A custom AttributedLabel using TestKit to replace UILabel.
+  A custom AttributedLabel using TextKit to replace UILabel.
   You can customization truncationToken, lineSpacing and backgroundColor, and also you can add custom view attachments.
                        DESC
 
