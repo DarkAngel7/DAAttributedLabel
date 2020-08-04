@@ -57,6 +57,7 @@
     } else {
         NSString *string = @"😄嘿嘿😜";
         NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc]initWithString:string];
+        [attributedString addAttribute:NSFontAttributeName value:[UIFont systemFontOfSize:30] range:NSMakeRange(0, string.length)];
         [attributedString addAttribute:DABackgroundColorAttributeName value:[UIColor lightGrayColor] range:NSMakeRange(0, string.length)];
         [attributedString addAttribute:DABackgroundColorCornerRadiusAttributeName value:@3 range:NSMakeRange(0, string.length)];
         UIEdgeInsets insets = UIEdgeInsetsMake(2, 5, 2, 5);

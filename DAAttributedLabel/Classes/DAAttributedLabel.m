@@ -157,7 +157,13 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self setText:attributedText.string];
     NSMutableAttributedString *mutableStr = attributedText.mutableCopy;
     [self.attributedText enumerateAttributesInRange:NSMakeRange(0, attributedText.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
-        [mutableStr addAttributes:attrs range:range];
+        NSDictionary *attributes = [mutableStr attributesAtIndex:0 longestEffectiveRange:nil inRange:range];
+        [attrs enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
+            // 如果不包含，再添加该属性
+            if (!attributes[key]) {
+                [mutableStr addAttribute:key value:obj range:range];
+            }
+        }];
     }];
     [super setAttributedText:mutableStr];
     [self updateTextStorageWithOriginalText];
