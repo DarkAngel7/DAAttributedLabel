@@ -160,7 +160,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         NSDictionary *attributes = [mutableStr attributesAtIndex:0 longestEffectiveRange:nil inRange:range];
         [attrs enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
             // 如果不包含，再添加该属性
-            if (!attributes[key]) {
+            if (!attributes[key] && ![key isEqualToString:NSLinkAttributeName]) {
                 [mutableStr addAttribute:key value:obj range:range];
             }
         }];
