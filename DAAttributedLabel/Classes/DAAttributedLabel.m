@@ -154,17 +154,17 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)setAttributedText:(NSAttributedString *)attributedText
 {
-    [self setText:attributedText.string];
     NSMutableAttributedString *mutableStr = attributedText.mutableCopy;
-    [self.attributedText enumerateAttributesInRange:NSMakeRange(0, attributedText.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
-        NSDictionary *attributes = [mutableStr attributesAtIndex:0 longestEffectiveRange:nil inRange:range];
-        [attrs enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
+    NSRange range = NSMakeRange(0, mutableStr.length);
+    [mutableStr enumerateAttributesInRange:range options:0 usingBlock:^(NSDictionary<NSAttributedStringKey,id> * _Nonnull attributes, NSRange range, BOOL * _Nonnull stop) {
+        [[self attributesFromProperties] enumerateKeysAndObjectsUsingBlock:^(id  _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
             // 如果不包含，再添加该属性
-            if (!attributes[key] && ![key isEqualToString:NSLinkAttributeName]) {
+            if (!attributes[key]) {
                 [mutableStr addAttribute:key value:obj range:range];
             }
         }];
     }];
+    
     [super setAttributedText:mutableStr];
     [self updateTextStorageWithOriginalText];
 }
@@ -707,6 +707,17 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (CGFloat)layoutManager:(NSLayoutManager *)layoutManager lineSpacingAfterGlyphAtIndex:(NSUInteger)glyphIndex withProposedLineFragmentRect:(CGRect)rect
 {
+    __block NSParagraphStyle *style = nil;
+    NSAttributedString *str = layoutManager.textStorage;
+    if ([layoutManager.delegate isKindOfClass:UILabel.class]) {
+        str = [(UILabel *)layoutManager.delegate attributedText];
+    }
+    [str enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange([layoutManager characterIndexForGlyphAtIndex:glyphIndex], 1) options:0 usingBlock:^(NSParagraphStyle * _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+        style = value;
+    }];
+    if (style.lineSpacing > 0) {
+        return style.lineSpacing;
+    }
     return self.lineSpacing;
 }
 
@@ -813,22 +824,16 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     
     // Get the current paragraph style. IB only allows a single paragraph so
     // getting the style of the first char is fine.
-    NSRange range;
-    NSParagraphStyle *paragraphStyle = [attributedString attribute:NSParagraphStyleAttributeName atIndex:0 effectiveRange:&range];
-    if (!paragraphStyle) {
-        return attributedString;
-    }
-    
-    // Remove the line breaks
-    NSMutableParagraphStyle *mutableParagraphStyle = [paragraphStyle mutableCopy];
-    mutableParagraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
-    //这里支持NSParagraphStyle的lineSpacing
-    if (!self.lineSpacing) {
-        _lineSpacing = mutableParagraphStyle.lineSpacing;
-    }
-    // Apply new style
-    NSMutableAttributedString *restyled = [[NSMutableAttributedString alloc] initWithAttributedString:attributedString];
-    [restyled addAttribute:NSParagraphStyleAttributeName value:mutableParagraphStyle range:NSMakeRange(0, restyled.length)];
+    NSMutableAttributedString *restyled = attributedString.mutableCopy;
+    [attributedString enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange(0, attributedString.length) options:0 usingBlock:^(id  _Nullable paragraphStyle, NSRange range, BOOL * _Nonnull stop) {
+        if (paragraphStyle) {
+            // Remove the line breaks
+            NSMutableParagraphStyle *mutableParagraphStyle = [paragraphStyle mutableCopy];
+            mutableParagraphStyle.lineBreakMode = NSLineBreakByWordWrapping;
+            // Apply new style
+            [restyled addAttribute:NSParagraphStyleAttributeName value:mutableParagraphStyle range:range];
+        }
+    }];
     return restyled;
 }
 
