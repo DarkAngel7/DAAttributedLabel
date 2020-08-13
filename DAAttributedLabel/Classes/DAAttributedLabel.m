@@ -604,28 +604,32 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 {
     if (self.isTouchMoved) {
         self.isTouchMoved = NO;
-        self.activeLinkAttributes = nil;
-        self.selectedRange = NSMakeRange(0, 0);
-        [super touchesEnded:touches withEvent:event];
-    } else {
-        if (self.activeLinkAttributes) {
-            if (self.activeLinkAttributes[NSAttachmentAttributeName]) {
-                if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapAttachment:)]) {
-                    [self.delegate attributedLabel:self didTapAttachment:self.activeLinkAttributes[NSAttachmentAttributeName]];
-                }
-            } else {
-                if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
-                    [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
-                }
-            }
+        UITouch *touch = [touches anyObject];
+        CGPoint location = [touch locationInView:self];
+        if (![self pointInside:location withEvent:nil]) {
             self.activeLinkAttributes = nil;
-            //有时候高亮的时间太短，所以这里延迟撤销高亮
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                self.selectedRange = NSMakeRange(0, 0);
-            });
-        } else {
+            self.selectedRange = NSMakeRange(0, 0);
             [super touchesEnded:touches withEvent:event];
+            return;
         }
+    }
+    if (self.activeLinkAttributes) {
+        if (self.activeLinkAttributes[NSAttachmentAttributeName]) {
+            if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapAttachment:)]) {
+                [self.delegate attributedLabel:self didTapAttachment:self.activeLinkAttributes[NSAttachmentAttributeName]];
+            }
+        } else {
+            if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
+                [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
+            }
+        }
+        self.activeLinkAttributes = nil;
+        //有时候高亮的时间太短，所以这里延迟撤销高亮
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            self.selectedRange = NSMakeRange(0, 0);
+        });
+    } else {
+        [super touchesEnded:touches withEvent:event];
     }
 }
 

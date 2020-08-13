@@ -250,6 +250,9 @@
 				LastUpgradeCheck = 0720;
 				ORGANIZATIONNAME = DarkAngel;
 				TargetAttributes = {
+					6003F589195388D20070C39A = {
+						DevelopmentTeam = 6692A4G2A3;
+					};
 					6003F5AD195388D20070C39A = {
 						TestTargetID = 6003F589195388D20070C39A;
 					};
@@ -260,6 +263,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 				Base,
 			);
@@ -533,6 +537,7 @@
 			baseConfigurationReference = 4524E80F2C322B2735A32DBF /* Pods-DAAttributedLabel_Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 6692A4G2A3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "DAAttributedLabel/DAAttributedLabel-Prefix.pch";
 				INFOPLIST_FILE = "DAAttributedLabel/DAAttributedLabel-Info.plist";
@@ -548,6 +553,7 @@
 			baseConfigurationReference = 7F910CA46D16C6DE8992E9DC /* Pods-DAAttributedLabel_Example.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 6692A4G2A3;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "DAAttributedLabel/DAAttributedLabel-Prefix.pch";
 				INFOPLIST_FILE = "DAAttributedLabel/DAAttributedLabel-Info.plist";
