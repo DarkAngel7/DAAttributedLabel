@@ -341,7 +341,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithTruncationToken
 {
-    if (self.lineBreakMode != NSLineBreakByTruncatingTail) {
+    if (self.lineBreakMode != NSLineBreakByTruncatingTail && self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
         return;
     }
     //计算需要替换的range
