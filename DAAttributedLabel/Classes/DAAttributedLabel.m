@@ -716,9 +716,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     if ([layoutManager.delegate isKindOfClass:UILabel.class]) {
         str = [(UILabel *)layoutManager.delegate attributedText];
     }
-    [str enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange([layoutManager characterIndexForGlyphAtIndex:glyphIndex], 1) options:0 usingBlock:^(NSParagraphStyle * _Nullable value, NSRange range, BOOL * _Nonnull stop) {
-        style = value;
-    }];
+    if (str.length >= [layoutManager characterIndexForGlyphAtIndex:glyphIndex] + 1) {
+        [str enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange([layoutManager characterIndexForGlyphAtIndex:glyphIndex], 1) options:0 usingBlock:^(NSParagraphStyle * _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+            style = value;
+        }];
+    }
     if (style.lineSpacing > 0) {
         return style.lineSpacing;
     }
