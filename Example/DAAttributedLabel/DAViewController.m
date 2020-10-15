@@ -75,10 +75,6 @@
     }
     NSMutableAttributedString *string = [[NSMutableAttributedString alloc] initWithAttributedString:self.attributedLabel.attributedText];
     [string appendAttributedString:[NSAttributedString attributedStringWithAttachment:attachment]];
-    NSMutableParagraphStyle *style = [NSMutableParagraphStyle new];
-    style.lineSpacing = 50;
-    [string appendAttributedString:[[NSAttributedString alloc] initWithString:@"的按时缴费拉丝机" attributes:@{NSParagraphStyleAttributeName: style}]];
-    
     self.attributedLabel.attributedText = string;
 }
 
