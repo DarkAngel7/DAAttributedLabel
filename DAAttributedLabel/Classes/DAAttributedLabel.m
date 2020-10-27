@@ -317,9 +317,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithOriginalText
 {
-    if (!self.window) {
-        return;
-    }
     // Now update our storage from either the attributedString or the plain text
     if (self.attributedText) {
         [self updateTextStoreWithAttributedString:self.attributedText];
@@ -416,11 +413,17 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     CGRect lineRect = [self.layoutManager lineFragmentRectForGlyphAtIndex:truncatedLocation effectiveRange:nil];
     CGPoint glyphPoint = CGPointZero;
     NSUInteger numberOfLines = ceil(wholeSize.width / lineRect.size.width);
-    glyphPoint.x = lineRect.origin.x + lineRect.size.width - size.width + size.width * (numberOfLines - wholeSize.width / size.width);
-    glyphPoint.y = lineRect.origin.y - size.height;
+    CGFloat x = wholeSize.width - numberOfLines * lineRect.size.width;
+    if (x <= 0) {
+        glyphPoint.x = lineRect.origin.x - x - 5;
+    } else {
+        glyphPoint.x = lineRect.origin.x + lineRect.size.width - x - 5;
+    }
+    glyphPoint.y = lineRect.origin.y + lineRect.size.height - size.height;
     
     //起点从能够放下的那个字形开始
-    NSUInteger replaceStartGlyphIndex = [self.layoutManager glyphIndexForPoint:glyphPoint inTextContainer:self.textContainer];
+    NSUInteger replaceStartGlyphIndex = [self.layoutManager characterIndexForPoint:glyphPoint inTextContainer:_textContainer fractionOfDistanceBetweenInsertionPoints:nil];
+    NSRange characterRange = NSMakeRange(replaceStartGlyphIndex, _textStorage.length - replaceStartGlyphIndex);
     /*
     //有问题再放开
     //判断最后一个是否是换行
@@ -430,7 +433,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         replaceStartGlyphIndex -= 1;
     }
     */
-    NSRange characterRange = [self.layoutManager characterRangeForGlyphRange:NSMakeRange(replaceStartGlyphIndex, glyphIndex - replaceStartGlyphIndex + 1) actualGlyphRange:nil];
+//    NSRange characterRange = [self.layoutManager characterRangeForGlyphRange:NSMakeRange(replaceStartGlyphIndex, glyphIndex - replaceStartGlyphIndex + 1) actualGlyphRange:nil];
 
     
     self.isTruncated = characterRange.length > 0;
