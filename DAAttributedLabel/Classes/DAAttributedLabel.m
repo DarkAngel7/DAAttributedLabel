@@ -419,7 +419,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     } else {
         glyphPoint.x = lineRect.origin.x + lineRect.size.width - x - 5;
     }
-    glyphPoint.y = lineRect.origin.y + lineRect.size.height - size.height;
+    glyphPoint.y = lineRect.origin.y + lineRect.size.height - size.height + 5;
     
     //起点从能够放下的那个字形开始
     NSUInteger replaceStartGlyphIndex = [self.layoutManager characterIndexForPoint:glyphPoint inTextContainer:_textContainer fractionOfDistanceBetweenInsertionPoints:nil];
