@@ -38,6 +38,8 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
  */
 @property (nonatomic, copy) NSDictionary *activeLinkAttributes;
 
+@property (nonatomic, assign) BOOL isTruncated;
+
 // State used to trag if the user has dragged during a touch
 @property (nonatomic, assign) BOOL isTouchMoved;
 
@@ -131,6 +133,16 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (void)setTruncationToken:(NSString *)truncationToken
 {
     _truncationToken = truncationToken.copy;
+    [self updateTextStorageWithText];
+}
+
+- (void)setAttributedSuffix:(NSAttributedString *)attributedSuffix {
+    _attributedSuffix = attributedSuffix.copy;
+    [self updateTextStorageWithText];
+}
+
+- (void)setSuffix:(NSString *)suffix {
+    _suffix = suffix.copy;
     [self updateTextStorageWithText];
 }
 
@@ -305,6 +317,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithOriginalText
 {
+    if (!self.window) {
+        return;
+    }
     // Now update our storage from either the attributedString or the plain text
     if (self.attributedText) {
         [self updateTextStoreWithAttributedString:self.attributedText];
@@ -333,6 +348,8 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     if (!self.textStorage.length) {
         return;
     }
+    // 添加自定义后缀
+    [self appendSuffixIfNeeded];
     //检测链接
     [self detectLinkAtCharRange:NSMakeRange(0, self.textStorage.length)];
     //更新链接属性
@@ -341,9 +358,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithTruncationToken
 {
+    self.isTruncated = NO;
     if (self.lineBreakMode != NSLineBreakByTruncatingTail && self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
         return;
     }
+    
     //计算需要替换的range
     NSUInteger truncatedLocation;
     //获取最后一个字形的索引
@@ -351,6 +370,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     if (glyphIndex < 0) {
         return;
     }
+    
     //放不下分2种：
     //1、行末...；
     //2、有换行，比如限制2行，第三行换行了所以放不下，也没有截断。
@@ -371,30 +391,36 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         }
     }
     
-    NSAttributedString *attributedTruncationToken;
+    NSMutableAttributedString *attributedTruncationToken;
     if (!self.attributedTruncationToken.length) {
         NSDictionary *attributes = [self.textStorage attributesAtIndex:truncatedLocation effectiveRange:nil];
         NSString *truncationTokenString = self.truncationToken.length ? self.truncationToken : @"\u2026"; // Unicode Character 'HORIZONTAL ELLIPSIS' (U+2026)
-        attributedTruncationToken = [[NSAttributedString alloc] initWithString:truncationTokenString attributes:attributes];
+        attributedTruncationToken = [[NSMutableAttributedString alloc] initWithString:truncationTokenString attributes:attributes];
     } else {
         NSMutableAttributedString *str = self.attributedText.mutableCopy;
         [str replaceCharactersInRange:NSMakeRange(0, str.length) withString:self.attributedTruncationToken.string];
         [self.attributedTruncationToken enumerateAttributesInRange:NSMakeRange(0, self.attributedTruncationToken.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
             [str addAttributes:attrs range:range];
         }];
-        attributedTruncationToken = [self fixedAttributedString:str];
+        attributedTruncationToken = [[NSMutableAttributedString alloc] initWithAttributedString:[self fixedAttributedString:str]];
     }
+    // 计算 attributedTruncationToken 和 attributedSuffix 的总体大小
+    NSUInteger attributedSuffixLength = self.attributedSuffix.length;
+    if (attributedSuffixLength) {
+        [attributedTruncationToken appendAttributedString:self.attributedSuffix];
+    }
+    
     CGSize size = [attributedTruncationToken boundingRectWithSize:self.textContainer.size options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
+    CGSize wholeSize = [attributedTruncationToken boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
+    
     CGRect lineRect = [self.layoutManager lineFragmentRectForGlyphAtIndex:truncatedLocation effectiveRange:nil];
-    NSUInteger replaceStartGlyphIndex;
-    //如果truncation的长度大于了一整行的长度，那么能显示几个显示几个了，显示不下的...
-    if (lineRect.size.width <= size.width) {
-        //起点从这行开始
-        replaceStartGlyphIndex = [self.layoutManager glyphIndexForPoint:lineRect.origin inTextContainer:self.textContainer];
-    } else {
-        //起点从能够放下的那个字形开始
-        replaceStartGlyphIndex = [self.layoutManager glyphIndexForPoint:CGPointMake(lineRect.origin.x + lineRect.size.width - size.width, lineRect.origin.y) inTextContainer:self.textContainer];
-    }
+    CGPoint glyphPoint = CGPointZero;
+    NSUInteger numberOfLines = ceil(wholeSize.width / lineRect.size.width);
+    glyphPoint.x = lineRect.origin.x + lineRect.size.width - size.width + size.width * (numberOfLines - wholeSize.width / size.width);
+    glyphPoint.y = lineRect.origin.y - size.height;
+    
+    //起点从能够放下的那个字形开始
+    NSUInteger replaceStartGlyphIndex = [self.layoutManager glyphIndexForPoint:glyphPoint inTextContainer:self.textContainer];
     /*
     //有问题再放开
     //判断最后一个是否是换行
@@ -405,7 +431,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     }
     */
     NSRange characterRange = [self.layoutManager characterRangeForGlyphRange:NSMakeRange(replaceStartGlyphIndex, glyphIndex - replaceStartGlyphIndex + 1) actualGlyphRange:nil];
+
     
+    self.isTruncated = characterRange.length > 0;
     //替换range对应的字符串为自定义的内容
     [self.textStorage replaceCharactersInRange:characterRange withAttributedString:attributedTruncationToken];
     
@@ -448,6 +476,29 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             [self.textStorage addAttribute:DALinkAttributeName value:value range:range];
         }
     }];
+}
+
+- (void)appendSuffixIfNeeded {
+    NSAttributedString *attributedSuffix;
+    // 拼接自定义suffix
+    if (!self.attributedSuffix.length) {
+        if (self.suffix.length) {
+            NSDictionary *attributes = [self.textStorage attributesAtIndex:self.textStorage.length - 1 effectiveRange:nil];
+            attributedSuffix = [[NSAttributedString alloc] initWithString:self.suffix attributes:attributes];
+            _attributedSuffix = attributedSuffix;
+        }
+    } else {
+        NSMutableAttributedString *str = self.attributedText.mutableCopy;
+        [str replaceCharactersInRange:NSMakeRange(0, str.length) withString:self.attributedSuffix.string];
+        [self.attributedSuffix enumerateAttributesInRange:NSMakeRange(0, self.attributedSuffix.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
+            [str addAttributes:attrs range:range];
+        }];
+        attributedSuffix = [[NSMutableAttributedString alloc] initWithAttributedString:[self fixedAttributedString:str]];
+        _attributedSuffix = attributedSuffix;
+    }
+    if (attributedSuffix.length) {
+        [self.textStorage appendAttributedString:attributedSuffix];
+    }
 }
 
 #pragma mark - Text Container Managment
@@ -532,6 +583,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     
     //更新TextStorage，添加自定义截断
     [self updateTextStorageWithTruncationToken];
+    
     // Calculate the offset of the text in the view
     NSRange glyphRange = [_layoutManager glyphRangeForTextContainer:_textContainer];
     CGPoint glyphsPosition = [self calcGlyphsPositionInView];

@@ -72,6 +72,12 @@ IB_DESIGNABLE
  普通字符串的Truncation，当显示不下的时候，默认是...，这里可以自定义该内容，与attributedTruncationToken互相覆盖
  */
 @property(nullable, nonatomic, copy) IBInspectable NSString *truncationToken;
+/// 文本是否被截断
+@property (nonatomic, assign, readonly) BOOL isTruncated;
+/// 自定义富文本后缀，固定显示，比如：当限制2行，此属性不为空时，永远显示此内容，会将文本内容自动truck为...
+@property (nonatomic, copy, nullable) NSAttributedString *attributedSuffix;
+/// 自定义后缀，与 attributedSuffix 互项覆盖
+@property (nonatomic, copy, nullable) NSString *suffix;
 /**
  自动检测链接等，default is NO
  */
