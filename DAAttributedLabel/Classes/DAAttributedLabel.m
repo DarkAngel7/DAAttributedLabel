@@ -38,8 +38,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
  */
 @property (nonatomic, copy) NSDictionary *activeLinkAttributes;
 
-@property (nonatomic, assign) BOOL isTruncated;
-
 // State used to trag if the user has dragged during a touch
 @property (nonatomic, assign) BOOL isTouchMoved;
 
@@ -313,6 +311,29 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     return attributes;
 }
 
+- (BOOL)isTruncated {
+    //获取最后一个字形的索引
+    NSInteger glyphIndex = [self.layoutManager glyphIndexForCharacterAtIndex:self.textStorage.length - 1];
+    if (glyphIndex < 0) {
+        return false;
+    }
+    
+    //放不下分2种：
+    //1、行末...；
+    //2、有换行，比如限制2行，第三行换行了所以放不下，也没有截断。
+    
+    //判断是否有截断
+    NSRange truncatedGlyphRange = [self.layoutManager truncatedGlyphRangeInLineFragmentForGlyphAtIndex:glyphIndex];
+    if (truncatedGlyphRange.location != NSNotFound) {
+        return true;
+    } else {
+        if ([_textStorage boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width < [self.attributedText boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width) {
+            return true;
+        }
+    }
+    return false;
+}
+
 #pragma mark - Text Storage Management
 
 - (void)updateTextStorageWithOriginalText
@@ -355,7 +376,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithTruncationToken
 {
-    self.isTruncated = NO;
     if (self.lineBreakMode != NSLineBreakByTruncatingTail && self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
         return;
     }
@@ -436,7 +456,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 //    NSRange characterRange = [self.layoutManager characterRangeForGlyphRange:NSMakeRange(replaceStartGlyphIndex, glyphIndex - replaceStartGlyphIndex + 1) actualGlyphRange:nil];
 
     
-    self.isTruncated = characterRange.length > 0;
     //替换range对应的字符串为自定义的内容
     [self.textStorage replaceCharactersInRange:characterRange withAttributedString:attributedTruncationToken];
     
