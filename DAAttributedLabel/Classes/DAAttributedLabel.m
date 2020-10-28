@@ -327,7 +327,15 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     if (truncatedGlyphRange.location != NSNotFound) {
         return true;
     } else {
-        if ([_textStorage boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width < [self.attributedText boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width) {
+        //可见的字形range
+        NSRange visiableGlyphRange = [self.layoutManager glyphRangeForTextContainer:self.textContainer];
+        //如果可见的字形range >= 最后一个字形 index，则表示能显示下，没有...
+        if (visiableGlyphRange.length - visiableGlyphRange.location - 1 >= glyphIndex) {
+            //既没有截断，也没有换行，总之能放下，所以直接返回即可
+            if ([_textStorage boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width < [self.attributedText boundingRectWithSize:CGSizeMake(MAXFLOAT, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin context:nil].size.width) {
+                return true;
+            }
+        } else {
             return true;
         }
     }
