@@ -172,5 +172,9 @@ extern NSString *const DABackgroundColorAttributeName;
 extern NSString *const DABackgroundColorInsetsAttributeName;
 ///背景色圆角，默认是3
 extern NSString *const DABackgroundColorCornerRadiusAttributeName;
+///Underline Height
+extern NSString *const DAUnderlineHeightAttributeName;
+///Underline Spacing
+extern NSString *const DAUnderlineSpacingAttributeName;
 
 NS_ASSUME_NONNULL_END

@@ -11,6 +11,8 @@ NSString *const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBac
 NSString *const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
 NSString *const DABackgroundColorInsetsAttributeName = @"DABackgroundColorInsetsAttributeName";
 NSString *const DABackgroundColorCornerRadiusAttributeName = @"DABackgroundColorCornerRadiusAttributeName";
+NSString *const DAUnderlineSpacingAttributeName = @"DAUnderlineSpacingAttributeName";
+NSString *const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeName";
 
 static NSString *const kDAAttributedLabelRangeKey = @"kDAAttributedLabelRangeKey";
 
@@ -1032,6 +1034,40 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 }
 
 /**
+ Override
+ */
+- (void)drawUnderlineForGlyphRange:(NSRange)glyphRange underlineType:(NSUnderlineStyle)underlineVal baselineOffset:(CGFloat)baselineOffset lineFragmentRect:(CGRect)lineRect lineFragmentGlyphRange:(NSRange)lineGlyphRange containerOrigin:(CGPoint)containerOrigin {
+    __block BOOL isCustomDraw = NO;
+    __block CGFloat offset = 0;
+    NSRange characterRange = [self characterRangeForGlyphRange:glyphRange actualGlyphRange:nil];
+    [self.textStorage enumerateAttribute:DAUnderlineSpacingAttributeName inRange:characterRange options:NSAttributedStringEnumerationReverse usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+            if (value && range.location != NSNotFound && [value isKindOfClass:NSNumber.class]) {
+                offset = [(NSNumber *)value floatValue];
+            }
+    }];
+    [self.textStorage enumerateAttribute:DAUnderlineHeightAttributeName inRange:characterRange options:NSAttributedStringEnumerationReverse usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+        if (value && range.location != NSNotFound && [value isKindOfClass:[NSNumber class]]) {
+            isCustomDraw = YES;
+            CGFloat underlineHeight = [value floatValue];
+            NSRange glyphRange = [self glyphRangeForCharacterRange:range actualCharacterRange:nil];
+            CGFloat baselineOffset = [[self.textStorage attribute:NSBaselineOffsetAttributeName atIndex:characterRange.location effectiveRange:nil] floatValue];
+            NSMutableArray *rects = @[].mutableCopy;
+            [self enumerateEnclosingRectsForGlyphRange:glyphRange withinSelectedGlyphRange:NSMakeRange(NSNotFound, 0) inTextContainer:self.textContainers.firstObject usingBlock:^(CGRect rect, BOOL * _Nonnull stop) {
+                rect.origin.x += lineRect.origin.x + containerOrigin.x;
+                rect.origin.y += CGRectGetMaxY(lineRect) - baselineOffset + offset;
+                rect.size.height = underlineHeight;
+                [rects addObject:[NSValue valueWithCGRect:rect]];
+            }];
+            UIColor *color = [self.textStorage attribute:NSUnderlineColorAttributeName atIndex:characterRange.location effectiveRange:nil] ? : [self.textStorage attribute:NSForegroundColorAttributeName atIndex:characterRange.location effectiveRange:nil];
+            [self fillUnderlineRectArray:rects color:color];
+        }
+    }];
+    if (!isCustomDraw) {
+        [super drawUnderlineForGlyphRange:glyphRange underlineType:underlineVal baselineOffset:baselineOffset lineFragmentRect:lineRect lineFragmentGlyphRange:lineGlyphRange containerOrigin:CGPointMake(containerOrigin.x, containerOrigin.y + offset)];
+    }
+}
+
+/**
  Custom draw method
  */
 - (void)fillBackgroundRectArray:(NSArray *)rectArray forCharacterRange:(NSRange)charRange color:(UIColor *)color rectCornerRadius:(CGFloat)cornerRadius rectInset:(UIEdgeInsets)rectInset
@@ -1064,6 +1100,21 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         rect.size.width = MAX(0, rect.size.width + rectInset.left + rectInset.right);
         rect.size.height = MAX(0, rect.size.height + rectInset.top + rectInset.bottom);
         path = [UIBezierPath bezierPathWithRoundedRect:CGRectIntegral(rect) byRoundingCorners:roundingCorner cornerRadii:size];
+        [path fill];
+    }
+}
+
+/**
+ Custom draw method
+ */
+- (void)fillUnderlineRectArray:(NSArray *)rectArray color:(UIColor *)color
+{
+    [color set];
+    CGRect rect;
+    UIBezierPath *path;
+    for (NSUInteger i = 0; i < rectArray.count; i++) {
+        rect = [rectArray[i] CGRectValue];
+        path = [UIBezierPath bezierPathWithRect:CGRectIntegral(rect)];
         [path fill];
     }
 }
