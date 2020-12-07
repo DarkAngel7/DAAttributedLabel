@@ -1054,7 +1054,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             NSMutableArray *rects = @[].mutableCopy;
             [self enumerateEnclosingRectsForGlyphRange:glyphRange withinSelectedGlyphRange:NSMakeRange(NSNotFound, 0) inTextContainer:self.textContainers.firstObject usingBlock:^(CGRect rect, BOOL * _Nonnull stop) {
                 rect.origin.x += lineRect.origin.x + containerOrigin.x;
-                rect.origin.y += lineRect.size.height - baselineOffset + offset - containerOrigin.y;
+                rect.origin.y += rect.size.height - baselineOffset + offset - containerOrigin.y;
                 if ([self.delegate respondsToSelector:@selector(layoutManager:lineSpacingAfterGlyphAtIndex:withProposedLineFragmentRect:)]) {
                     rect.origin.y -= [self.delegate layoutManager:self lineSpacingAfterGlyphAtIndex:characterRange.location withProposedLineFragmentRect:rect];
                 }
