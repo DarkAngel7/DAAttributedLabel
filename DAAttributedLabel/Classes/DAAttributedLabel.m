@@ -1117,7 +1117,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     UIBezierPath *path;
     for (NSUInteger i = 0; i < rectArray.count; i++) {
         rect = [rectArray[i] CGRectValue];
-        path = [UIBezierPath bezierPathWithRect:CGRectIntegral(rect)];
+        path = [UIBezierPath bezierPathWithRect:rect];
         [path fill];
     }
 }
