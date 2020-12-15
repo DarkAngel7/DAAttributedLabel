@@ -432,9 +432,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         attributedTruncationToken = [[NSMutableAttributedString alloc] initWithAttributedString:[self fixedAttributedString:str]];
     }
     // 计算 attributedTruncationToken 和 attributedSuffix 的总体大小
+    BOOL hasSuffix = NO;
     NSUInteger attributedSuffixLength = self.attributedSuffix.length;
     if (attributedSuffixLength) {
         [attributedTruncationToken appendAttributedString:self.attributedSuffix];
+        hasSuffix = YES;
     }
     
     CGSize size = [attributedTruncationToken boundingRectWithSize:self.textContainer.size options:NSStringDrawingUsesLineFragmentOrigin context:nil].size;
@@ -444,12 +446,13 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     CGPoint glyphPoint = CGPointZero;
     NSUInteger numberOfLines = ceil(wholeSize.width / lineRect.size.width);
     CGFloat x = wholeSize.width - numberOfLines * lineRect.size.width;
+    CGFloat fixedWidth = hasSuffix ? 5 : 0;
     if (x <= 0) {
-        glyphPoint.x = lineRect.origin.x - x - 5;
+        glyphPoint.x = lineRect.origin.x - x - fixedWidth;
     } else {
-        glyphPoint.x = lineRect.origin.x + lineRect.size.width - x - 5;
+        glyphPoint.x = lineRect.origin.x + lineRect.size.width - x - fixedWidth;
     }
-    glyphPoint.y = lineRect.origin.y + lineRect.size.height - size.height + 5;
+    glyphPoint.y = lineRect.origin.y + lineRect.size.height - size.height + fixedWidth;
     
     //起点从能够放下的那个字形开始
     NSUInteger replaceStartGlyphIndex = [self.layoutManager characterIndexForPoint:glyphPoint inTextContainer:_textContainer fractionOfDistanceBetweenInsertionPoints:nil];
