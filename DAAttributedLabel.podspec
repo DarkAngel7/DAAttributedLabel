@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'DAAttributedLabel'
-  s.version          = '1.0.0'
+  s.version          = '1.1.0'
   s.summary          = 'A custom AttributedLabel using TextKit to replace UILabel.'
   s.description      = <<-DESC
   A custom AttributedLabel using TextKit to replace UILabel.
@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'darkangel7' => '535596858@qq.com' }
   s.source           = { :git => 'https://github.com/darkangel7/DAAttributedLabel.git', :tag => s.version.to_s }
-  s.ios.deployment_target = '8.0'
+  s.ios.deployment_target = '9.0'
   s.source_files = 'DAAttributedLabel/Classes/**/*'
   s.public_header_files = 'DAAttributedLabel/Classes/**/*.h'
   s.frameworks = 'UIKit', 'Foundation'
