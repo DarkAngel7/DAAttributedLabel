@@ -172,16 +172,16 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 ///选中的链接背景色，有默认值
-extern NSString *const DASelectedLinkBackgroundColorAttributeName;
+extern NSAttributedStringKey const DASelectedLinkBackgroundColorAttributeName;
 ///背景色属性，不包含行间距的，如果包含行间距，请使用NSBackgroudColorAttributeName
-extern NSString *const DABackgroundColorAttributeName;
+extern NSAttributedStringKey const DABackgroundColorAttributeName;
 ///背景色大小inset，默认是zero
-extern NSString *const DABackgroundColorInsetsAttributeName;
+extern NSAttributedStringKey const DABackgroundColorInsetsAttributeName;
 ///背景色圆角，默认是3
-extern NSString *const DABackgroundColorCornerRadiusAttributeName;
+extern NSAttributedStringKey const DABackgroundColorCornerRadiusAttributeName;
 ///Underline Height
-extern NSString *const DAUnderlineHeightAttributeName;
+extern NSAttributedStringKey const DAUnderlineHeightAttributeName;
 ///Underline Spacing
-extern NSString *const DAUnderlineSpacingAttributeName;
+extern NSAttributedStringKey const DAUnderlineSpacingAttributeName;
 
 NS_ASSUME_NONNULL_END

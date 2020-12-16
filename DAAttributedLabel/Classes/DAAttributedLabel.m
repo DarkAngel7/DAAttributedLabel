@@ -8,12 +8,12 @@
 #import "DAAttributedLabel.h"
 #import "DAAsyncLayer.h"
 
-NSString *const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBackgroundColorAttributeName";
-NSString *const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
-NSString *const DABackgroundColorInsetsAttributeName = @"DABackgroundColorInsetsAttributeName";
-NSString *const DABackgroundColorCornerRadiusAttributeName = @"DABackgroundColorCornerRadiusAttributeName";
-NSString *const DAUnderlineSpacingAttributeName = @"DAUnderlineSpacingAttributeName";
-NSString *const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeName";
+NSAttributedStringKey const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBackgroundColorAttributeName";
+NSAttributedStringKey const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
+NSAttributedStringKey const DABackgroundColorInsetsAttributeName = @"DABackgroundColorInsetsAttributeName";
+NSAttributedStringKey const DABackgroundColorCornerRadiusAttributeName = @"DABackgroundColorCornerRadiusAttributeName";
+NSAttributedStringKey const DAUnderlineSpacingAttributeName = @"DAUnderlineSpacingAttributeName";
+NSAttributedStringKey const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeName";
 
 static NSString *const kDAAttributedLabelRangeKey = @"kDAAttributedLabelRangeKey";
 
