@@ -16,6 +16,8 @@
 		96CA87B52CCD21FF975773AEB89BAA74 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B63C6A64CF66340668996F78DA6BB482 /* UIKit.framework */; };
 		B0C703E4D9E05167B19483448C38569C /* DAAttributedLabel.m in Sources */ = {isa = PBXBuildFile; fileRef = 7EB65621CDDEEFCDF47072EF08C36F8D /* DAAttributedLabel.m */; };
 		B9EC0617657D28F7D1655ACF4DA43262 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D88AAE1F92055A60CC2FC970D7D34634 /* Foundation.framework */; };
+		F28EF1702589C58D008343C8 /* DAAsyncLayer.h in Headers */ = {isa = PBXBuildFile; fileRef = F28EF16E2589C58D008343C8 /* DAAsyncLayer.h */; };
+		F28EF1712589C58D008343C8 /* DAAsyncLayer.m in Sources */ = {isa = PBXBuildFile; fileRef = F28EF16F2589C58D008343C8 /* DAAsyncLayer.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,6 +55,8 @@
 		E7D72D1CF71F9010FA65FA7DC0189514 /* Pods-DAAttributedLabel_Example-dummy.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; path = "Pods-DAAttributedLabel_Example-dummy.m"; sourceTree = "<group>"; };
 		EC16569D43009599D939D6C60CFE8E98 /* Pods-DAAttributedLabel_Example-frameworks.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-DAAttributedLabel_Example-frameworks.sh"; sourceTree = "<group>"; };
 		F03C94A864FA8F94295C2842261B415E /* DAAttributedLabel.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; name = DAAttributedLabel.h; path = DAAttributedLabel/Classes/DAAttributedLabel.h; sourceTree = "<group>"; };
+		F28EF16E2589C58D008343C8 /* DAAsyncLayer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = DAAsyncLayer.h; path = DAAttributedLabel/Classes/DAAsyncLayer.h; sourceTree = "<group>"; };
+		F28EF16F2589C58D008343C8 /* DAAsyncLayer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = DAAsyncLayer.m; path = DAAttributedLabel/Classes/DAAsyncLayer.m; sourceTree = "<group>"; };
 		F4290DD668F4548A805778790222C985 /* Pods-DAAttributedLabel_Example-resources.sh */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.script.sh; path = "Pods-DAAttributedLabel_Example-resources.sh"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -171,6 +175,8 @@
 			children = (
 				F03C94A864FA8F94295C2842261B415E /* DAAttributedLabel.h */,
 				7EB65621CDDEEFCDF47072EF08C36F8D /* DAAttributedLabel.m */,
+				F28EF16E2589C58D008343C8 /* DAAsyncLayer.h */,
+				F28EF16F2589C58D008343C8 /* DAAsyncLayer.m */,
 				77078E8877D699999F4416A5F7DC513F /* Support Files */,
 			);
 			name = DAAttributedLabel;
@@ -199,6 +205,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F28EF1702589C58D008343C8 /* DAAsyncLayer.h in Headers */,
 				6D3B78EA5468E3596F1DFAE40DEA53A0 /* DAAttributedLabel.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -270,6 +277,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 7DB346D0F39D3F0E887471402A8071AB;
@@ -305,6 +313,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F28EF1712589C58D008343C8 /* DAAsyncLayer.m in Sources */,
 				5504970B0B940F69C96A677ABCD9E1F8 /* DAAttributedLabel-dummy.m in Sources */,
 				B0C703E4D9E05167B19483448C38569C /* DAAttributedLabel.m in Sources */,
 			);

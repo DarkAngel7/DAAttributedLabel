@@ -59,11 +59,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - DAAttributedLabel
 
-IB_DESIGNABLE
 /**
  富文本label
  */
 @interface DAAttributedLabel : UILabel
+/**
+ asynchronous display of the view's layer. default YES
+ */
+@property (nonatomic, assign) IBInspectable BOOL displaysAsynchronously;
+/**
+ clear layer'content,before asynchronously display. default YES
+ */
+@property (nonatomic, assign) IBInspectable BOOL clearContentBeforeAsyncDisplay;
 /**
  富文本的Truncation，当显示不下的时候，默认是...，这里可以自定义该内容
  */
@@ -87,7 +94,7 @@ IB_DESIGNABLE
                       NSForegroundColorAttributeName: [UIColor blueColor],
                       DASelectedLinkBackgroundColorAttributeName: [UIColor lightGrayColor]}
  */
-@property (nullable, nonatomic, copy) NSDictionary<NSString *, id> *linkTextAttributes;
+@property (nullable, nonatomic, copy) NSDictionary<NSAttributedStringKey, id> *linkTextAttributes;
 /**
  链接是否在换行时被截断。  default is NO
  */

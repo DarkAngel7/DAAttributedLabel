@@ -6,6 +6,7 @@
 //
 
 #import "DAAttributedLabel.h"
+#import "DAAsyncLayer.h"
 
 NSString *const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBackgroundColorAttributeName";
 NSString *const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
@@ -20,7 +21,7 @@ static NSString *const DALinkAttributeName = @"DALinkAttributeName";
 
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
-@interface DAAttributedLabel () <DALayoutManagerDelegate>
+@interface DAAttributedLabel () <DALayoutManagerDelegate, DAAsyncLayerDelegate>
 /**
  TextKit三件套
  */
@@ -53,6 +54,10 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 #pragma mark - Initialize
 
++ (Class)layerClass {
+    return [DAAsyncLayer class];
+}
+
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
     self = [super initWithCoder:aDecoder];
     if (self) {
@@ -70,12 +75,15 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)initialize
 {
+    _clearContentBeforeAsyncDisplay = YES;
+    self.layer.backgroundColor = self.backgroundColor.CGColor;
     self.userInteractionEnabled = YES;
     self.customAttachmentViews = @[].mutableCopy;
     self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
     [self addGestureRecognizer:self.longPressGesture];
     //配置TextKit三件套
     [self configureTextkitStack];
+    self.asyncLayer.asyncDelegate = self;
     //根据已有内容更新textStorage
     [self updateTextStorageWithText];
 }
@@ -110,18 +118,26 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 #pragma mark - Setters and Getters
 
+- (BOOL)displaysAsynchronously {
+    return self.asyncLayer.displaysAsynchronously;
+}
+
+- (void)setDisplaysAsynchronously:(BOOL)displaysAsynchronously {
+    self.asyncLayer.displaysAsynchronously = displaysAsynchronously;
+}
+
 - (void)setNumberOfLines:(NSInteger)numberOfLines
 {
     [super setNumberOfLines:numberOfLines];
     self.textContainer.maximumNumberOfLines = numberOfLines;
-    [self updateTextStorageWithOriginalText];
+    [self updateTextStorageWithText];
 }
 
 - (void)setLineBreakMode:(NSLineBreakMode)lineBreakMode
 {
     [super setLineBreakMode:lineBreakMode];
     self.textContainer.lineBreakMode = lineBreakMode;
-    [self updateTextStorageWithOriginalText];
+    [self updateTextStorageWithText];
 }
 
 - (void)setAttributedTruncationToken:(NSAttributedString *)attributedTruncationToken
@@ -178,7 +194,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     }];
     
     [super setAttributedText:mutableStr];
-    [self updateTextStorageWithOriginalText];
+    [self updateTextStorageWithText];
 }
 
 - (void)setText:(NSString *)text
@@ -189,30 +205,16 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         //此时不会调用draw text in rect
         [self clearCustomAttachmentViews];
     }
-    [self updateTextStorageWithOriginalText];
+    [self updateTextStorageWithText];
 }
 
 // Applies background color to selected range. Used to highlight touched links
 - (void)setSelectedRange:(NSRange)range
 {
-    // Remove the current selection if the selection is changing
-    if (self.selectedRange.length && !NSEqualRanges(self.selectedRange, range)) {
-        [self.textStorage removeAttribute:DASelectedLinkBackgroundColorAttributeName range:self.selectedRange];
-    }
-    // Apply the new selection to the text
-    if (range.length) {
-        [self.textStorage addAttribute:DASelectedLinkBackgroundColorAttributeName value:self.linkTextAttributes[DASelectedLinkBackgroundColorAttributeName] ? : [UIColor lightGrayColor] range:range];
-    }
-    
     // Save the new range
     _selectedRange = range;
     
-    NSRange glyphRange = NSMakeRange(NSNotFound, 0);
-    [self.layoutManager characterRangeForGlyphRange:range actualGlyphRange:&glyphRange];
-    CGRect rect = [self.layoutManager usedRectForTextContainer:self.textContainer];
-    CGPoint point = [self calcGlyphsPositionInView];
-    rect.origin.y += point.y;
-    [self setNeedsDisplayInRect:rect];
+    [self immediatelyDisplayRedraw];
 }
 
 - (void)setCopyable:(BOOL)copyable
@@ -344,7 +346,23 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     return false;
 }
 
+- (nullable DAAsyncLayer *)asyncLayer {
+    if ([self.layer isKindOfClass:DAAsyncLayer.class]) {
+        return ((DAAsyncLayer *)self.layer);
+    } else {
+        return nil;
+    }
+}
+
 #pragma mark - Text Storage Management
+
+- (void)updateTextStorageWithText
+{
+    if (_clearContentBeforeAsyncDisplay) {
+        self.layer.contents = nil;
+    }
+    [self.layer setNeedsDisplay];
+}
 
 - (void)updateTextStorageWithOriginalText
 {
@@ -358,19 +376,10 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     }
 }
 
-- (void)updateTextStorageWithText
-{
-    [self updateTextStorageWithOriginalText];
-    [self setNeedsDisplay];
-}
-
 - (void)updateTextStoreWithAttributedString:(NSAttributedString *)attributedString
 {
     if (attributedString.length) {
         attributedString = [self fixedAttributedString:attributedString];
-    }
-    if (self.selectedRange.location != NSNotFound) {
-        self.selectedRange = NSMakeRange(0, 0);
     }
     [self.textStorage setAttributedString:attributedString];
     if (!self.textStorage.length) {
@@ -536,6 +545,14 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     }
 }
 
+- (void)updateSelectedRange {
+    if ((self.selectedRange.location != NSNotFound &&
+        !NSEqualRanges(self.selectedRange, NSMakeRange(0, 0))) &&
+         (_selectedRange.length + _selectedRange.location <= self.textStorage.length)) {
+        [self.textStorage addAttribute:DASelectedLinkBackgroundColorAttributeName value:self.linkTextAttributes[DASelectedLinkBackgroundColorAttributeName] ? : [UIColor lightGrayColor] range:_selectedRange];
+    }
+}
+
 #pragma mark - Text Container Managment
 
 - (void)updateTextContainer
@@ -605,30 +622,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     return textBounds;
 }
 
-- (void)drawTextInRect:(CGRect)rect
-{
-    [self clearCustomAttachmentViews];
-    //内容为空，调用super
-    if (!self.textStorage.length) {
-        [super drawTextInRect:rect];
-    }
-    // Don't call super implementation. Might want to uncomment this out when
-    // debugging layout and rendering problems.
-    // [super drawTextInRect:rect];
-    
-    //更新TextStorage，添加自定义截断
-    [self updateTextStorageWithTruncationToken];
-    
-    // Calculate the offset of the text in the view
-    NSRange glyphRange = [_layoutManager glyphRangeForTextContainer:_textContainer];
-    CGPoint glyphsPosition = [self calcGlyphsPositionInView];
-    
-    // Drawing code
-    [_layoutManager drawBackgroundForGlyphRange:glyphRange atPoint:glyphsPosition];
-    [_layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:glyphsPosition];
-
-}
-
 // Returns the XY offset of the range of glyphs from the view's origin
 - (CGPoint)calcGlyphsPositionInView
 {
@@ -653,6 +646,46 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self.customAttachmentViews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     [self.customAttachmentViews removeAllObjects];
 }
+
+- (void)immediatelyDisplayRedraw {
+    [self.asyncLayer displayImmediately];
+}
+
+#pragma mark - DAAsyncLayerDelegate
+
+- (DAAsyncLayerDisplayTask *)newAsyncDisplayTask {
+    DAAsyncLayerDisplayTask *task = [[DAAsyncLayerDisplayTask alloc]init];
+    // will display
+    task.willDisplay = ^(CALayer * _Nonnull layer) {
+        [self clearCustomAttachmentViews];
+    };
+    task.displaying = ^(CGContextRef  _Nonnull context, CGSize size, BOOL isAsynchronously, BOOL (^ _Nonnull isCancelled)(void)) {
+        if (isCancelled()) {
+            return;
+        }
+        [self updateTextStorageWithOriginalText];
+        if (!self.textStorage.length) {
+            return;
+        }
+        //更新TextStorage，添加自定义截断
+        [self updateTextStorageWithTruncationToken];
+        //点击高亮
+        [self updateSelectedRange];
+        
+        // Calculate the offset of the text in the view
+        NSRange glyphRange = [_layoutManager glyphRangeForTextContainer:_textContainer];
+        CGPoint glyphsPosition = [self calcGlyphsPositionInView];
+        
+        // Drawing code
+        [_layoutManager drawBackgroundForGlyphRange:glyphRange atPoint:glyphsPosition];
+        [_layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:glyphsPosition];
+    };
+    task.didDisplay = ^(CALayer * _Nonnull layer, BOOL finished) {
+
+    };
+    return task;
+}
+
 
 #pragma mark - Interactions
 
@@ -711,10 +744,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             }
         }
         self.activeLinkAttributes = nil;
-        //有时候高亮的时间太短，所以这里延迟撤销高亮
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            self.selectedRange = NSMakeRange(0, 0);
-        });
+        self.selectedRange = NSMakeRange(0, 0);
     } else {
         [super touchesEnded:touches withEvent:event];
     }
@@ -816,11 +846,18 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)layoutManager:(DALayoutManager *)layoutManager drawCustomViewAttachment:(DATextAttachment *)attachment inRect:(CGRect)rect
 {
-    UIView *view = attachment.customView;
-    if (![self.customAttachmentViews containsObject:view]) {
-        view.frame = CGRectIntegral(rect);
-        [self addSubview:view];
-        [self.customAttachmentViews addObject:view];
+    void (^handler)() = ^{
+        UIView *view = attachment.customView;
+        if (![self.customAttachmentViews containsObject:view]) {
+            view.frame = CGRectIntegral(rect);
+            [self addSubview:view];
+            [self.customAttachmentViews addObject:view];
+        }
+    };
+    if (NSThread.isMainThread) {
+        handler();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), handler);
     }
 }
 
