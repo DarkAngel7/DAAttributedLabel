@@ -46,6 +46,8 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @property (nonatomic, strong) NSMutableArray *customAttachmentViews;
 
+@property (nonatomic, assign) CGRect _bounds;
+
 @end
 
 @implementation DAAttributedLabel
@@ -83,6 +85,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self addGestureRecognizer:self.longPressGesture];
     //配置TextKit三件套
     [self configureTextkitStack];
+    self.asyncLayer.displaysAsynchronously = NO;
     self.asyncLayer.asyncDelegate = self;
     //根据已有内容更新textStorage
     [self updateTextStorageWithText];
@@ -364,27 +367,23 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self.layer setNeedsDisplay];
 }
 
-- (void)updateTextStorageWithOriginalText
-{
-    // Now update our storage from either the attributedString or the plain text
+- (void)updateTextStorage {
+    NSAttributedString *attributedString;
     if (self.attributedText) {
-        [self updateTextStoreWithAttributedString:self.attributedText];
+        attributedString = self.attributedText;
     } else if (self.text) {
-        [self updateTextStoreWithAttributedString:[[NSAttributedString alloc] initWithString:self.text attributes:[self attributesFromProperties]]];
+        attributedString = [[NSAttributedString alloc] initWithString:self.text attributes:[self attributesFromProperties]];
     } else {
-        [self updateTextStoreWithAttributedString:[[NSAttributedString alloc] initWithString:@"" attributes:[self attributesFromProperties]]];
+        attributedString = [[NSAttributedString alloc] initWithString:@"" attributes:[self attributesFromProperties]];
     }
-}
-
-- (void)updateTextStoreWithAttributedString:(NSAttributedString *)attributedString
-{
     if (attributedString.length) {
         attributedString = [self fixedAttributedString:attributedString];
     }
     [self.textStorage setAttributedString:attributedString];
-    if (!self.textStorage.length) {
-        return;
-    }
+}
+
+- (void)updateTextStorageWithOriginalText
+{
     // 添加自定义后缀
     [self appendSuffixIfNeeded];
     //检测链接
@@ -395,7 +394,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithTruncationToken
 {
-    if (self.lineBreakMode != NSLineBreakByTruncatingTail && self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
+    if (self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
         return;
     }
     
@@ -433,7 +432,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         NSString *truncationTokenString = self.truncationToken.length ? self.truncationToken : @"\u2026"; // Unicode Character 'HORIZONTAL ELLIPSIS' (U+2026)
         attributedTruncationToken = [[NSMutableAttributedString alloc] initWithString:truncationTokenString attributes:attributes];
     } else {
-        NSMutableAttributedString *str = self.attributedText.mutableCopy;
+        NSMutableAttributedString *str = self.textStorage.mutableCopy;
         [str replaceCharactersInRange:NSMakeRange(0, str.length) withString:self.attributedTruncationToken.string];
         [self.attributedTruncationToken enumerateAttributesInRange:NSMakeRange(0, self.attributedTruncationToken.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
             [str addAttributes:attrs range:range];
@@ -532,7 +531,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             _attributedSuffix = attributedSuffix;
         }
     } else {
-        NSMutableAttributedString *str = self.attributedText.mutableCopy;
+        NSMutableAttributedString *str = self.textStorage.mutableCopy;
         [str replaceCharactersInRange:NSMakeRange(0, str.length) withString:self.attributedSuffix.string];
         [self.attributedSuffix enumerateAttributesInRange:NSMakeRange(0, self.attributedSuffix.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
             [str addAttributes:attrs range:range];
@@ -569,6 +568,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (void)setBounds:(CGRect)bounds
 {
     [super setBounds:bounds];
+    self._bounds = bounds;
     [self updateTextContainer];
 }
 
@@ -595,6 +595,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     _textContainer.maximumNumberOfLines = numberOfLines;
     
     //先更新下内容，再计算。
+    [self updateTextStorage];
     [self updateTextStorageWithOriginalText];
     //强制_layoutManager加载，更新布局
     [_layoutManager glyphRangeForTextContainer:_textContainer];
@@ -631,9 +632,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     textBounds.size.width = ceil(textBounds.size.width);
     textBounds.size.height = ceil(textBounds.size.height) - self.lineSpacing;
     
-    if (textBounds.size.height < self.bounds.size.height)
+    if (textBounds.size.height < self._bounds.size.height)
     {
-        CGFloat paddingHeight = (self.bounds.size.height - textBounds.size.height) / 2.0;
+        CGFloat paddingHeight = (self._bounds.size.height - textBounds.size.height) / 2.0;
         textOffset.y = paddingHeight;
     }
     
@@ -660,6 +661,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         [self clearCustomAttachmentViews];
     };
     __weak typeof(self) wself = self;
+    task.willDisplay = ^(CALayer * _Nonnull layer) {
+        [wself updateTextStorage];
+    };
     task.displaying = ^(CGContextRef  _Nonnull context, CGSize size, BOOL isAsynchronously, BOOL (^ _Nonnull isCancelled)(void)) {
         if (isCancelled()) {
             return;
@@ -790,7 +794,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self becomeFirstResponder];
     UIMenuController *menu = [UIMenuController sharedMenuController];
     [menu setTargetRect:self.frame inView:self.superview];
-    ;
     [menu setMenuVisible:YES animated:YES];
 }
 
@@ -831,9 +834,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 {
     __block NSParagraphStyle *style = nil;
     NSAttributedString *str = layoutManager.textStorage;
-    if ([layoutManager.delegate isKindOfClass:UILabel.class]) {
-        str = [(UILabel *)layoutManager.delegate attributedText];
-    }
     if (str.length >= [layoutManager characterIndexForGlyphAtIndex:glyphIndex] + 1) {
         [str enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange([layoutManager characterIndexForGlyphAtIndex:glyphIndex], 1) options:0 usingBlock:^(NSParagraphStyle * _Nullable value, NSRange range, BOOL * _Nonnull stop) {
             style = value;

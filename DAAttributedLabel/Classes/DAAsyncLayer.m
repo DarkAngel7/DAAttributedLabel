@@ -79,7 +79,7 @@ CGFloat da_text_screen_scale(void) {
 
 - (void)configureLayer {
     _sentinel = [[DASentinel alloc]init];
-    _displaysAsynchronously = NO;
+    _displaysAsynchronously = YES;
     self.contentsScale = da_text_screen_scale();
     self.opaque = YES;
 }

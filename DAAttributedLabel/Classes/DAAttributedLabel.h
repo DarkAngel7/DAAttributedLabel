@@ -64,7 +64,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @interface DAAttributedLabel : UILabel
 /**
- asynchronous display of the view's layer. default YES
+ asynchronous display of the view's layer. default NO
  */
 @property (nonatomic, assign) IBInspectable BOOL displaysAsynchronously;
 /**
