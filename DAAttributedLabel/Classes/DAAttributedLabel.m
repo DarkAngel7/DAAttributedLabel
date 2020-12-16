@@ -16,6 +16,8 @@ NSString *const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeNam
 
 static NSString *const kDAAttributedLabelRangeKey = @"kDAAttributedLabelRangeKey";
 
+static NSString *const DALinkAttributeName = @"DALinkAttributeName";
+
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @interface DAAttributedLabel () <DALayoutManagerDelegate>
@@ -300,17 +302,19 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (NSDictionary<NSString *,id> *)linkTextAttributes
 {
+    if (!_linkTextAttributes) {
+        _linkTextAttributes = @{NSFontAttributeName: self.font,
+                                NSForegroundColorAttributeName: [UIColor blueColor],
+                                DASelectedLinkBackgroundColorAttributeName: [UIColor lightGrayColor],
+                                };
+    }
     return _linkTextAttributes;
 }
 
 - (NSDictionary<NSString *,id> *)layoutLinkTextAttributes
 {
-    NSDictionary *attributes = self.linkTextAttributes.copy;
-    if (!attributes) {
-        attributes = @{NSFontAttributeName: self.font,
-                       NSForegroundColorAttributeName: [UIColor blueColor],
-        };
-    }
+    NSMutableDictionary *attributes = self.linkTextAttributes.mutableCopy;
+    [attributes removeObjectForKey:DASelectedLinkBackgroundColorAttributeName];
     return attributes;
 }
 
@@ -490,27 +494,26 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         // Add highlight color
         if (result.URL) {
             [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:result.range];
-            [self.textStorage addAttribute:NSLinkAttributeName value:result.URL range:result.range];
+            [self.textStorage addAttribute:DALinkAttributeName value:result.URL range:result.range];
         }
         if (result.phoneNumber) {
             [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:result.range];
-            [self.textStorage addAttribute:NSLinkAttributeName value:[NSURL URLWithString:[@"tel://" stringByAppendingString:result.phoneNumber]] range:result.range];
+            [self.textStorage addAttribute:DALinkAttributeName value:[NSURL URLWithString:[@"tel://" stringByAppendingString:result.phoneNumber]] range:result.range];
         }
     }];
 }
 
 - (void)updateLinkAttributesAtCharRange:(NSRange)charRange
 {
-    if (_linkTextAttributes == nil) {
-        return;
-    }
     //更新链接的文本属性
     [self.textStorage enumerateAttribute:NSLinkAttributeName inRange:charRange options:NSAttributedStringEnumerationReverse usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
         if (value) {
+            [self.textStorage removeAttribute:NSLinkAttributeName range:range];
             [self.textStorage removeAttribute:NSForegroundColorAttributeName range:range];
             [self.textStorage removeAttribute:NSUnderlineStyleAttributeName range:range];
             [self.textStorage removeAttribute:NSUnderlineColorAttributeName range:range];
             [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:range];
+            [self.textStorage addAttribute:DALinkAttributeName value:value range:range];
         }
     }];
 }
@@ -709,7 +712,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             }
         } else {
             if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
-                [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[NSLinkAttributeName]];
+                [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
             }
         }
         self.activeLinkAttributes = nil;
@@ -745,7 +748,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
                 }
             } else {
                 if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
-                    [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[NSLinkAttributeName]];
+                    [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
                 }
             }
         } else {
@@ -794,7 +797,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (BOOL)layoutManager:(NSLayoutManager *)layoutManager shouldBreakLineByWordBeforeCharacterAtIndex:(NSUInteger)charIndex
 {
     NSRange range;
-    NSURL *linkURL = [layoutManager.textStorage attribute:NSLinkAttributeName atIndex:charIndex effectiveRange:&range];
+    NSURL *linkURL = [layoutManager.textStorage attribute:DALinkAttributeName atIndex:charIndex effectiveRange:&range];
     return !self.shouldBreakLinkLine && !(linkURL && (charIndex > range.location) && (charIndex <= NSMaxRange(range)));
 }
 
@@ -857,11 +860,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     
     if (characterIndex < self.textStorage.length) {
         NSRange range;
-        id value = [self.textStorage attribute:NSLinkAttributeName atIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)];
+        id value = [self.textStorage attribute:DALinkAttributeName atIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)];
         if (!value) {
             return nil;
         }
-        return @{NSLinkAttributeName: value,
+        return @{DALinkAttributeName: value,
                  kDAAttributedLabelRangeKey: [NSValue valueWithRange:range]
                  };
     }
