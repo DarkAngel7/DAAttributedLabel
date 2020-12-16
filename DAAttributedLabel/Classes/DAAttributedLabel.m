@@ -659,26 +659,27 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     task.willDisplay = ^(CALayer * _Nonnull layer) {
         [self clearCustomAttachmentViews];
     };
+    __weak typeof(self) wself = self;
     task.displaying = ^(CGContextRef  _Nonnull context, CGSize size, BOOL isAsynchronously, BOOL (^ _Nonnull isCancelled)(void)) {
         if (isCancelled()) {
             return;
         }
-        [self updateTextStorageWithOriginalText];
-        if (!self.textStorage.length) {
+        [wself updateTextStorageWithOriginalText];
+        if (!wself.textStorage.length) {
             return;
         }
         //更新TextStorage，添加自定义截断
-        [self updateTextStorageWithTruncationToken];
+        [wself updateTextStorageWithTruncationToken];
         //点击高亮
-        [self updateSelectedRange];
+        [wself updateSelectedRange];
         
         // Calculate the offset of the text in the view
-        NSRange glyphRange = [_layoutManager glyphRangeForTextContainer:_textContainer];
-        CGPoint glyphsPosition = [self calcGlyphsPositionInView];
+        NSRange glyphRange = [wself.layoutManager glyphRangeForTextContainer:wself.textContainer];
+        CGPoint glyphsPosition = [wself calcGlyphsPositionInView];
         
         // Drawing code
-        [_layoutManager drawBackgroundForGlyphRange:glyphRange atPoint:glyphsPosition];
-        [_layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:glyphsPosition];
+        [wself.layoutManager drawBackgroundForGlyphRange:glyphRange atPoint:glyphsPosition];
+        [wself.layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:glyphsPosition];
     };
     task.didDisplay = ^(CALayer * _Nonnull layer, BOOL finished) {
 
@@ -846,7 +847,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)layoutManager:(DALayoutManager *)layoutManager drawCustomViewAttachment:(DATextAttachment *)attachment inRect:(CGRect)rect
 {
-    void (^handler)() = ^{
+    void (^handler)(void) = ^{
         UIView *view = attachment.customView;
         if (![self.customAttachmentViews containsObject:view]) {
             view.frame = CGRectIntegral(rect);
