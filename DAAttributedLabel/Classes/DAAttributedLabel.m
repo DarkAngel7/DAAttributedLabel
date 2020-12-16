@@ -6,22 +6,19 @@
 //
 
 #import "DAAttributedLabel.h"
-#import "DAAsyncLayer.h"
 
-NSAttributedStringKey const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBackgroundColorAttributeName";
-NSAttributedStringKey const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
-NSAttributedStringKey const DABackgroundColorInsetsAttributeName = @"DABackgroundColorInsetsAttributeName";
-NSAttributedStringKey const DABackgroundColorCornerRadiusAttributeName = @"DABackgroundColorCornerRadiusAttributeName";
-NSAttributedStringKey const DAUnderlineSpacingAttributeName = @"DAUnderlineSpacingAttributeName";
-NSAttributedStringKey const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeName";
+NSString *const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBackgroundColorAttributeName";
+NSString *const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
+NSString *const DABackgroundColorInsetsAttributeName = @"DABackgroundColorInsetsAttributeName";
+NSString *const DABackgroundColorCornerRadiusAttributeName = @"DABackgroundColorCornerRadiusAttributeName";
+NSString *const DAUnderlineSpacingAttributeName = @"DAUnderlineSpacingAttributeName";
+NSString *const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeName";
 
 static NSString *const kDAAttributedLabelRangeKey = @"kDAAttributedLabelRangeKey";
 
-static NSString *const DALinkAttributeName = @"DALinkAttributeName";
-
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
-@interface DAAttributedLabel () <DALayoutManagerDelegate, DAAsyncLayerDelegate>
+@interface DAAttributedLabel () <DALayoutManagerDelegate>
 /**
  TextKit三件套
  */
@@ -46,8 +43,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @property (nonatomic, strong) NSMutableArray *customAttachmentViews;
 
-@property (nonatomic, assign) CGRect _bounds;
-
 @end
 
 @implementation DAAttributedLabel
@@ -55,10 +50,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 @synthesize linkTextAttributes = _linkTextAttributes;
 
 #pragma mark - Initialize
-
-+ (Class)layerClass {
-    return [DAAsyncLayer class];
-}
 
 - (instancetype)initWithCoder:(NSCoder *)aDecoder {
     self = [super initWithCoder:aDecoder];
@@ -77,16 +68,12 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)initialize
 {
-    _clearContentBeforeAsyncDisplay = YES;
-    self.layer.backgroundColor = self.backgroundColor.CGColor;
     self.userInteractionEnabled = YES;
     self.customAttachmentViews = @[].mutableCopy;
     self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
     [self addGestureRecognizer:self.longPressGesture];
     //配置TextKit三件套
     [self configureTextkitStack];
-    self.asyncLayer.displaysAsynchronously = NO;
-    self.asyncLayer.asyncDelegate = self;
     //根据已有内容更新textStorage
     [self updateTextStorageWithText];
 }
@@ -121,26 +108,23 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 #pragma mark - Setters and Getters
 
-- (BOOL)displaysAsynchronously {
-    return self.asyncLayer.displaysAsynchronously;
-}
-
 - (void)setDisplaysAsynchronously:(BOOL)displaysAsynchronously {
-    self.asyncLayer.displaysAsynchronously = displaysAsynchronously;
+    _displaysAsynchronously = displaysAsynchronously;
+    self.layer.drawsAsynchronously = displaysAsynchronously;
 }
 
 - (void)setNumberOfLines:(NSInteger)numberOfLines
 {
     [super setNumberOfLines:numberOfLines];
     self.textContainer.maximumNumberOfLines = numberOfLines;
-    [self updateTextStorageWithText];
+    [self updateTextStorageWithOriginalText];
 }
 
 - (void)setLineBreakMode:(NSLineBreakMode)lineBreakMode
 {
     [super setLineBreakMode:lineBreakMode];
     self.textContainer.lineBreakMode = lineBreakMode;
-    [self updateTextStorageWithText];
+    [self updateTextStorageWithOriginalText];
 }
 
 - (void)setAttributedTruncationToken:(NSAttributedString *)attributedTruncationToken
@@ -197,7 +181,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     }];
     
     [super setAttributedText:mutableStr];
-    [self updateTextStorageWithText];
+    [self updateTextStorageWithOriginalText];
 }
 
 - (void)setText:(NSString *)text
@@ -208,16 +192,30 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         //此时不会调用draw text in rect
         [self clearCustomAttachmentViews];
     }
-    [self updateTextStorageWithText];
+    [self updateTextStorageWithOriginalText];
 }
 
 // Applies background color to selected range. Used to highlight touched links
 - (void)setSelectedRange:(NSRange)range
 {
+    // Remove the current selection if the selection is changing
+    if (self.selectedRange.length && !NSEqualRanges(self.selectedRange, range)) {
+        [self.textStorage removeAttribute:DASelectedLinkBackgroundColorAttributeName range:self.selectedRange];
+    }
+    // Apply the new selection to the text
+    if (range.length) {
+        [self.textStorage addAttribute:DASelectedLinkBackgroundColorAttributeName value:self.linkTextAttributes[DASelectedLinkBackgroundColorAttributeName] ? : [UIColor lightGrayColor] range:range];
+    }
+    
     // Save the new range
     _selectedRange = range;
     
-    [self immediatelyDisplayRedraw];
+    NSRange glyphRange = NSMakeRange(NSNotFound, 0);
+    [self.layoutManager characterRangeForGlyphRange:range actualGlyphRange:&glyphRange];
+    CGRect rect = [self.layoutManager usedRectForTextContainer:self.textContainer];
+    CGPoint point = [self calcGlyphsPositionInView];
+    rect.origin.y += point.y;
+    [self setNeedsDisplayInRect:rect];
 }
 
 - (void)setCopyable:(BOOL)copyable
@@ -302,19 +300,17 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (NSDictionary<NSString *,id> *)linkTextAttributes
 {
-    if (!_linkTextAttributes) {
-        _linkTextAttributes = @{NSFontAttributeName: self.font,
-                                NSForegroundColorAttributeName: [UIColor blueColor],
-                                DASelectedLinkBackgroundColorAttributeName: [UIColor lightGrayColor],
-                                };
-    }
     return _linkTextAttributes;
 }
 
 - (NSDictionary<NSString *,id> *)layoutLinkTextAttributes
 {
-    NSMutableDictionary *attributes = self.linkTextAttributes.mutableCopy;
-    [attributes removeObjectForKey:DASelectedLinkBackgroundColorAttributeName];
+    NSDictionary *attributes = self.linkTextAttributes.copy;
+    if (!attributes) {
+        attributes = @{NSFontAttributeName: self.font,
+                       NSForegroundColorAttributeName: [UIColor blueColor],
+        };
+    }
     return attributes;
 }
 
@@ -349,41 +345,38 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     return false;
 }
 
-- (nullable DAAsyncLayer *)asyncLayer {
-    if ([self.layer isKindOfClass:DAAsyncLayer.class]) {
-        return ((DAAsyncLayer *)self.layer);
-    } else {
-        return nil;
-    }
-}
-
 #pragma mark - Text Storage Management
-
-- (void)updateTextStorageWithText
-{
-    if (_clearContentBeforeAsyncDisplay) {
-        self.layer.contents = nil;
-    }
-    [self.layer setNeedsDisplay];
-}
-
-- (void)updateTextStorage {
-    NSAttributedString *attributedString;
-    if (self.attributedText) {
-        attributedString = self.attributedText;
-    } else if (self.text) {
-        attributedString = [[NSAttributedString alloc] initWithString:self.text attributes:[self attributesFromProperties]];
-    } else {
-        attributedString = [[NSAttributedString alloc] initWithString:@"" attributes:[self attributesFromProperties]];
-    }
-    if (attributedString.length) {
-        attributedString = [self fixedAttributedString:attributedString];
-    }
-    [self.textStorage setAttributedString:attributedString];
-}
 
 - (void)updateTextStorageWithOriginalText
 {
+    // Now update our storage from either the attributedString or the plain text
+    if (self.attributedText) {
+        [self updateTextStoreWithAttributedString:self.attributedText];
+    } else if (self.text) {
+        [self updateTextStoreWithAttributedString:[[NSAttributedString alloc] initWithString:self.text attributes:[self attributesFromProperties]]];
+    } else {
+        [self updateTextStoreWithAttributedString:[[NSAttributedString alloc] initWithString:@"" attributes:[self attributesFromProperties]]];
+    }
+}
+
+- (void)updateTextStorageWithText
+{
+    [self updateTextStorageWithOriginalText];
+    [self setNeedsDisplay];
+}
+
+- (void)updateTextStoreWithAttributedString:(NSAttributedString *)attributedString
+{
+    if (attributedString.length) {
+        attributedString = [self fixedAttributedString:attributedString];
+    }
+    if (self.selectedRange.location != NSNotFound) {
+        self.selectedRange = NSMakeRange(0, 0);
+    }
+    [self.textStorage setAttributedString:attributedString];
+    if (!self.textStorage.length) {
+        return;
+    }
     // 添加自定义后缀
     [self appendSuffixIfNeeded];
     //检测链接
@@ -394,7 +387,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)updateTextStorageWithTruncationToken
 {
-    if (self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
+    if (self.lineBreakMode != NSLineBreakByTruncatingTail && self.textContainer.lineBreakMode != NSLineBreakByTruncatingTail) {
         return;
     }
     
@@ -432,7 +425,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         NSString *truncationTokenString = self.truncationToken.length ? self.truncationToken : @"\u2026"; // Unicode Character 'HORIZONTAL ELLIPSIS' (U+2026)
         attributedTruncationToken = [[NSMutableAttributedString alloc] initWithString:truncationTokenString attributes:attributes];
     } else {
-        NSMutableAttributedString *str = self.textStorage.mutableCopy;
+        NSMutableAttributedString *str = self.attributedText.mutableCopy;
         [str replaceCharactersInRange:NSMakeRange(0, str.length) withString:self.attributedTruncationToken.string];
         [self.attributedTruncationToken enumerateAttributesInRange:NSMakeRange(0, self.attributedTruncationToken.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
             [str addAttributes:attrs range:range];
@@ -497,26 +490,27 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         // Add highlight color
         if (result.URL) {
             [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:result.range];
-            [self.textStorage addAttribute:DALinkAttributeName value:result.URL range:result.range];
+            [self.textStorage addAttribute:NSLinkAttributeName value:result.URL range:result.range];
         }
         if (result.phoneNumber) {
             [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:result.range];
-            [self.textStorage addAttribute:DALinkAttributeName value:[NSURL URLWithString:[@"tel://" stringByAppendingString:result.phoneNumber]] range:result.range];
+            [self.textStorage addAttribute:NSLinkAttributeName value:[NSURL URLWithString:[@"tel://" stringByAppendingString:result.phoneNumber]] range:result.range];
         }
     }];
 }
 
 - (void)updateLinkAttributesAtCharRange:(NSRange)charRange
 {
+    if (_linkTextAttributes == nil) {
+        return;
+    }
     //更新链接的文本属性
     [self.textStorage enumerateAttribute:NSLinkAttributeName inRange:charRange options:NSAttributedStringEnumerationReverse usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
         if (value) {
-            [self.textStorage removeAttribute:NSLinkAttributeName range:range];
             [self.textStorage removeAttribute:NSForegroundColorAttributeName range:range];
             [self.textStorage removeAttribute:NSUnderlineStyleAttributeName range:range];
             [self.textStorage removeAttribute:NSUnderlineColorAttributeName range:range];
             [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:range];
-            [self.textStorage addAttribute:DALinkAttributeName value:value range:range];
         }
     }];
 }
@@ -531,7 +525,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             _attributedSuffix = attributedSuffix;
         }
     } else {
-        NSMutableAttributedString *str = self.textStorage.mutableCopy;
+        NSMutableAttributedString *str = self.attributedText.mutableCopy;
         [str replaceCharactersInRange:NSMakeRange(0, str.length) withString:self.attributedSuffix.string];
         [self.attributedSuffix enumerateAttributesInRange:NSMakeRange(0, self.attributedSuffix.length) options:0 usingBlock:^(NSDictionary<NSString *,id> * _Nonnull attrs, NSRange range, BOOL * _Nonnull stop) {
             [str addAttributes:attrs range:range];
@@ -541,14 +535,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     }
     if (attributedSuffix.length) {
         [self.textStorage appendAttributedString:attributedSuffix];
-    }
-}
-
-- (void)updateSelectedRange {
-    if ((self.selectedRange.location != NSNotFound &&
-        !NSEqualRanges(self.selectedRange, NSMakeRange(0, 0))) &&
-         (_selectedRange.length + _selectedRange.location <= self.textStorage.length)) {
-        [self.textStorage addAttribute:DASelectedLinkBackgroundColorAttributeName value:self.linkTextAttributes[DASelectedLinkBackgroundColorAttributeName] ? : [UIColor lightGrayColor] range:_selectedRange];
     }
 }
 
@@ -568,7 +554,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (void)setBounds:(CGRect)bounds
 {
     [super setBounds:bounds];
-    self._bounds = bounds;
     [self updateTextContainer];
 }
 
@@ -595,7 +580,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     _textContainer.maximumNumberOfLines = numberOfLines;
     
     //先更新下内容，再计算。
-    [self updateTextStorage];
     [self updateTextStorageWithOriginalText];
     //强制_layoutManager加载，更新布局
     [_layoutManager glyphRangeForTextContainer:_textContainer];
@@ -623,6 +607,30 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     return textBounds;
 }
 
+- (void)drawTextInRect:(CGRect)rect
+{
+    [self clearCustomAttachmentViews];
+    //内容为空，调用super
+    if (!self.textStorage.length) {
+        [super drawTextInRect:rect];
+    }
+    // Don't call super implementation. Might want to uncomment this out when
+    // debugging layout and rendering problems.
+    // [super drawTextInRect:rect];
+    
+    //更新TextStorage，添加自定义截断
+    [self updateTextStorageWithTruncationToken];
+    
+    // Calculate the offset of the text in the view
+    NSRange glyphRange = [_layoutManager glyphRangeForTextContainer:_textContainer];
+    CGPoint glyphsPosition = [self calcGlyphsPositionInView];
+    
+    // Drawing code
+    [_layoutManager drawBackgroundForGlyphRange:glyphRange atPoint:glyphsPosition];
+    [_layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:glyphsPosition];
+
+}
+
 // Returns the XY offset of the range of glyphs from the view's origin
 - (CGPoint)calcGlyphsPositionInView
 {
@@ -632,9 +640,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     textBounds.size.width = ceil(textBounds.size.width);
     textBounds.size.height = ceil(textBounds.size.height) - self.lineSpacing;
     
-    if (textBounds.size.height < self._bounds.size.height)
+    if (textBounds.size.height < self.bounds.size.height)
     {
-        CGFloat paddingHeight = (self._bounds.size.height - textBounds.size.height) / 2.0;
+        CGFloat paddingHeight = (self.bounds.size.height - textBounds.size.height) / 2.0;
         textOffset.y = paddingHeight;
     }
     
@@ -647,50 +655,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self.customAttachmentViews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     [self.customAttachmentViews removeAllObjects];
 }
-
-- (void)immediatelyDisplayRedraw {
-    [self.asyncLayer displayImmediately];
-}
-
-#pragma mark - DAAsyncLayerDelegate
-
-- (DAAsyncLayerDisplayTask *)newAsyncDisplayTask {
-    DAAsyncLayerDisplayTask *task = [[DAAsyncLayerDisplayTask alloc]init];
-    // will display
-    task.willDisplay = ^(CALayer * _Nonnull layer) {
-        [self clearCustomAttachmentViews];
-    };
-    __weak typeof(self) wself = self;
-    task.willDisplay = ^(CALayer * _Nonnull layer) {
-        [wself updateTextStorage];
-    };
-    task.displaying = ^(CGContextRef  _Nonnull context, CGSize size, BOOL isAsynchronously, BOOL (^ _Nonnull isCancelled)(void)) {
-        if (isCancelled()) {
-            return;
-        }
-        [wself updateTextStorageWithOriginalText];
-        if (!wself.textStorage.length) {
-            return;
-        }
-        //更新TextStorage，添加自定义截断
-        [wself updateTextStorageWithTruncationToken];
-        //点击高亮
-        [wself updateSelectedRange];
-        
-        // Calculate the offset of the text in the view
-        NSRange glyphRange = [wself.layoutManager glyphRangeForTextContainer:wself.textContainer];
-        CGPoint glyphsPosition = [wself calcGlyphsPositionInView];
-        
-        // Drawing code
-        [wself.layoutManager drawBackgroundForGlyphRange:glyphRange atPoint:glyphsPosition];
-        [wself.layoutManager drawGlyphsForGlyphRange:glyphRange atPoint:glyphsPosition];
-    };
-    task.didDisplay = ^(CALayer * _Nonnull layer, BOOL finished) {
-
-    };
-    return task;
-}
-
 
 #pragma mark - Interactions
 
@@ -745,11 +709,14 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
             }
         } else {
             if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
-                [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
+                [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[NSLinkAttributeName]];
             }
         }
         self.activeLinkAttributes = nil;
-        self.selectedRange = NSMakeRange(0, 0);
+        //有时候高亮的时间太短，所以这里延迟撤销高亮
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            self.selectedRange = NSMakeRange(0, 0);
+        });
     } else {
         [super touchesEnded:touches withEvent:event];
     }
@@ -778,7 +745,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
                 }
             } else {
                 if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
-                    [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
+                    [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[NSLinkAttributeName]];
                 }
             }
         } else {
@@ -794,6 +761,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self becomeFirstResponder];
     UIMenuController *menu = [UIMenuController sharedMenuController];
     [menu setTargetRect:self.frame inView:self.superview];
+    ;
     [menu setMenuVisible:YES animated:YES];
 }
 
@@ -826,7 +794,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (BOOL)layoutManager:(NSLayoutManager *)layoutManager shouldBreakLineByWordBeforeCharacterAtIndex:(NSUInteger)charIndex
 {
     NSRange range;
-    NSURL *linkURL = [layoutManager.textStorage attribute:DALinkAttributeName atIndex:charIndex effectiveRange:&range];
+    NSURL *linkURL = [layoutManager.textStorage attribute:NSLinkAttributeName atIndex:charIndex effectiveRange:&range];
     return !self.shouldBreakLinkLine && !(linkURL && (charIndex > range.location) && (charIndex <= NSMaxRange(range)));
 }
 
@@ -834,6 +802,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 {
     __block NSParagraphStyle *style = nil;
     NSAttributedString *str = layoutManager.textStorage;
+    if ([layoutManager.delegate isKindOfClass:UILabel.class]) {
+        str = [(UILabel *)layoutManager.delegate attributedText];
+    }
     if (str.length >= [layoutManager characterIndexForGlyphAtIndex:glyphIndex] + 1) {
         [str enumerateAttribute:NSParagraphStyleAttributeName inRange:NSMakeRange([layoutManager characterIndexForGlyphAtIndex:glyphIndex], 1) options:0 usingBlock:^(NSParagraphStyle * _Nullable value, NSRange range, BOOL * _Nonnull stop) {
             style = value;
@@ -847,18 +818,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)layoutManager:(DALayoutManager *)layoutManager drawCustomViewAttachment:(DATextAttachment *)attachment inRect:(CGRect)rect
 {
-    void (^handler)(void) = ^{
-        UIView *view = attachment.customView;
-        if (![self.customAttachmentViews containsObject:view]) {
-            view.frame = CGRectIntegral(rect);
-            [self addSubview:view];
-            [self.customAttachmentViews addObject:view];
-        }
-    };
-    if (NSThread.isMainThread) {
-        handler();
-    } else {
-        dispatch_async(dispatch_get_main_queue(), handler);
+    UIView *view = attachment.customView;
+    if (![self.customAttachmentViews containsObject:view]) {
+        view.frame = CGRectIntegral(rect);
+        [self addSubview:view];
+        [self.customAttachmentViews addObject:view];
     }
 }
 
@@ -893,11 +857,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     
     if (characterIndex < self.textStorage.length) {
         NSRange range;
-        id value = [self.textStorage attribute:DALinkAttributeName atIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)];
+        id value = [self.textStorage attribute:NSLinkAttributeName atIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)];
         if (!value) {
             return nil;
         }
-        return @{DALinkAttributeName: value,
+        return @{NSLinkAttributeName: value,
                  kDAAttributedLabelRangeKey: [NSValue valueWithRange:range]
                  };
     }
