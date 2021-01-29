@@ -968,8 +968,8 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     paragraph.alignment = self.textAlignment;
     
     // Create the dictionary
-    NSDictionary *attributes = @{NSFontAttributeName : self.font,
-                                 NSForegroundColorAttributeName : color,
+    NSDictionary *attributes = @{NSFontAttributeName : self.font ? : [UIFont systemFontOfSize:16],
+                                 NSForegroundColorAttributeName : color ? : [UIColor blackColor],
                                  NSShadowAttributeName : shadow,
                                  NSParagraphStyleAttributeName : paragraph,
                                  };
