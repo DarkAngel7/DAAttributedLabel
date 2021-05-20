@@ -1,16 +1,16 @@
 PODS:
-  - DAAttributedLabel (0.1.0)
+  - DAAttributedLabel (1.2.3)
 
 DEPENDENCIES:
   - DAAttributedLabel (from `../`)
 
 EXTERNAL SOURCES:
   DAAttributedLabel:
-    :path: ../
+    :path: "../"
 
 SPEC CHECKSUMS:
-  DAAttributedLabel: 98e9267a4c3da5c8dd04ca83a410bd3975df4a77
+  DAAttributedLabel: baab0a2b8a8443129efe3d4a578cd5b46d466182
 
-PODFILE CHECKSUM: b2dae9145797c6bc3a88628fcc966336abe8a9c1
+PODFILE CHECKSUM: a3b54e5b174fcb4ea1a8a43e0d935c7dc39af626
 
-COCOAPODS: 1.3.1
+COCOAPODS: 1.10.1
