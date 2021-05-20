@@ -59,6 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - DAAttributedLabel
 
+@class DALayoutManager;
 /**
  富文本label
  */
@@ -111,12 +112,29 @@ NS_ASSUME_NONNULL_BEGIN
  代理
  */
 @property (nonatomic, weak) id <DAAttributedLabelDelegate> delegate;
+/**
+ TextKit三件套
+ */
+@property (nonatomic, strong, readonly) DALayoutManager *layoutManager;
+@property (nonatomic, strong, readonly) NSTextContainer *textContainer;
+@property (nonatomic, strong, readonly) NSTextStorage *textStorage;
+/**
+ 选中的range，一般用来处理链接高亮
+ */
+@property (nonatomic, assign, readonly) NSRange selectedRange;
+/**
+ 长按手势
+ */
+@property (nonatomic, strong, readonly) UILongPressGestureRecognizer *longPressGesture;
+
+- (nullable NSDictionary<NSAttributedStringKey, id> *)attributesAtPoint:(CGPoint)location;
+- (nullable NSDictionary<NSAttributedStringKey, id> *)attachmentAtLocation:(CGPoint)location;
 
 @end
 
 #pragma mark - DALayoutManagerDelegate
 
-@class DALayoutManager, DATextAttachment;
+@class DATextAttachment;
 /**
  协议，在适当时候回调，画自定义的UIView附件。
  NOTE: 代理需要自行在适当的时候，移除这些UIView附件
@@ -148,6 +166,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - DATextAttachment
 
+typedef NS_ENUM(NSUInteger, DATextAttachmentLineAlignment) {
+    DATextAttachmentLineAlignmentTop,
+    DATextAttachmentLineAlignmentMiddle,
+    DATextAttachmentLineAlignmentBottom,
+};
 /**
  自定义的TextAttachment，使用时应避免和image或者contents和fileType同时使用，如果同时设置了，那么customView优先级高于其他，将会覆盖其他的设置
  */
@@ -160,6 +183,8 @@ NS_ASSUME_NONNULL_BEGIN
  UIView附件的大小
  */
 @property (nonatomic, assign) CGSize viewSize;
+
+@property (nonatomic, assign) DATextAttachmentLineAlignment lineAlignment;
 /**
  快速创建一个自定义UIView附件
 

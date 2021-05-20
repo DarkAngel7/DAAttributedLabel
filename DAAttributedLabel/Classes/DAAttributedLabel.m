@@ -509,10 +509,12 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     [self.textStorage enumerateAttribute:NSLinkAttributeName inRange:charRange options:NSAttributedStringEnumerationReverse usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
         if (value) {
             [self.textStorage removeAttribute:NSLinkAttributeName range:range];
-            [self.textStorage removeAttribute:NSForegroundColorAttributeName range:range];
-            [self.textStorage removeAttribute:NSUnderlineStyleAttributeName range:range];
-            [self.textStorage removeAttribute:NSUnderlineColorAttributeName range:range];
-            [self.textStorage addAttributes:[self layoutLinkTextAttributes] range:range];
+            NSDictionary *attributes = [self.textStorage attributesAtIndex:range.location longestEffectiveRange:nil inRange:range];
+            [[self layoutLinkTextAttributes] enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, id  _Nonnull obj, BOOL * _Nonnull stop) {
+                if (attributes[key] == nil) {
+                    [self.textStorage addAttribute:key value:obj range:range];
+                }
+            }];
             [self.textStorage addAttribute:DALinkAttributeName value:value range:range];
         }
     }];
@@ -831,8 +833,16 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 #pragma mark - Helpers
 
-- (NSDictionary *)linkAtPoint:(CGPoint)location
-{
+- (nullable NSDictionary<NSAttributedStringKey, id> *)attributesAtPoint:(CGPoint)location {
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [self _attributesAtPoint:location].mutableCopy;
+    if (attributes[DALinkAttributeName]) {
+        attributes[NSLinkAttributeName] = attributes[DALinkAttributeName];
+        [attributes removeObjectForKey:DALinkAttributeName];
+    }
+    return attributes;
+}
+
+- (nullable NSDictionary<NSAttributedStringKey, id> *)_attributesAtPoint:(CGPoint)location {
     // Do nothing if we have no text
     if (self.textStorage.string.length == 0) {
         return nil;
@@ -860,13 +870,21 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     
     if (characterIndex < self.textStorage.length) {
         NSRange range;
-        id value = [self.textStorage attribute:DALinkAttributeName atIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)];
+        NSMutableDictionary<NSAttributedStringKey, id> *value = [self.textStorage attributesAtIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)].mutableCopy;
         if (!value) {
             return nil;
         }
-        return @{DALinkAttributeName: value,
-                 kDAAttributedLabelRangeKey: [NSValue valueWithRange:range]
-                 };
+        value[kDAAttributedLabelRangeKey] = [NSValue valueWithRange:range];
+        return value;
+    }
+    return nil;
+}
+
+- (NSDictionary *)linkAtPoint:(CGPoint)location
+{
+    NSDictionary<NSAttributedStringKey, id> *attributes = [self _attributesAtPoint:location];
+    if (attributes[DALinkAttributeName] || attributes[NSLinkAttributeName]) {
+        return attributes;
     }
     return nil;
 }
@@ -1009,6 +1027,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
                     if ([self.delegate respondsToSelector:@selector(layoutManager:lineSpacingAfterGlyphAtIndex:withProposedLineFragmentRect:)]) {
                         rect.size.height -= [self.delegate layoutManager:self lineSpacingAfterGlyphAtIndex:glyphRange.location withProposedLineFragmentRect:rect];
                     }
+                    CGRect boundsRect = [(DATextAttachment *)value attachmentBoundsForTextContainer:self.textContainers.firstObject proposedLineFragment:rect glyphPosition:origin characterIndex:characterRange.location];
+                    rect.origin.x += boundsRect.origin.x;
+                    rect.origin.y += boundsRect.origin.y;
                     [self.delegate layoutManager:self drawCustomViewAttachment:value inRect:rect];
                 }];
             }
@@ -1180,10 +1201,30 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 {
     CGRect rect = [super attachmentBoundsForTextContainer:textContainer proposedLineFragment:lineFrag glyphPosition:position characterIndex:charIndex];
     if (self.customView) {
-        rect.origin.x = 0;
-        rect.origin.y = 0;
         rect.size.height = MIN(textContainer.size.height, self.viewSize.height);
         rect.size.width = MIN(textContainer.size.width, self.viewSize.width);
+    }
+    rect.origin.x = 0;
+    switch (self.lineAlignment) {
+        case DATextAttachmentLineAlignmentTop:
+            rect.origin.y = 0;
+            break;
+        case DATextAttachmentLineAlignmentMiddle:
+            if (rect.size.height >= lineFrag.size.height) {
+                rect.origin.y = 0;
+            } else {
+                rect.origin.y = (lineFrag.size.height - rect.size.height) / 2;
+            }
+            break;
+        case DATextAttachmentLineAlignmentBottom:
+            if (rect.size.height >= lineFrag.size.height) {
+                rect.origin.y = 0;
+            } else {
+                rect.origin.y = lineFrag.size.height - rect.size.height;
+            }
+            break;
+        default:
+            break;
     }
     return rect;
 }
