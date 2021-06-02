@@ -37,7 +37,7 @@ NS_ASSUME_NONNULL_BEGIN
 
  @param label label
  @param attachment attachment对象
- @return YES or NO, 加入没有实现，默认是NO
+ @return YES or NO,如果没有实现，默认是NO
  */
 - (BOOL)attributedLabel:(DAAttributedLabel *)label shouldInteractWithTextAttachment:(NSTextAttachment *)attachment;
 /**
@@ -128,6 +128,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) UILongPressGestureRecognizer *longPressGesture;
 
 - (nullable NSDictionary<NSAttributedStringKey, id> *)attributesAtPoint:(CGPoint)location;
+- (nullable NSDictionary<NSAttributedStringKey, id> *)linkAttributesAtPoint:(CGPoint)location;
 - (nullable NSDictionary<NSAttributedStringKey, id> *)attachmentAtLocation:(CGPoint)location;
 
 @end

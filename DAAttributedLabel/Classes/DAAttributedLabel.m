@@ -665,10 +665,19 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
-    if (![self linkAtPoint:point] || ![self shouldInteractAttachmentAtPoint:point] || !self.userInteractionEnabled || self.hidden || self.alpha < 0.01 || ![self pointInside:point withEvent:event]) {
-        return [super hitTest:point withEvent:event];
+    if ((![self linkAtPoint:point] && ![self shouldInteractAttachmentAtPoint:point]) || !self.userInteractionEnabled || self.hidden || self.alpha < 0.01 || ![self pointInside:point withEvent:event]) {
+        for (UIGestureRecognizer *gesture in self.gestureRecognizers) {
+            if (gesture.isEnabled && [gesture isKindOfClass:[UITapGestureRecognizer class]]) {
+                return [super hitTest:point withEvent:event];
+            }
+        }
+        UIView *v = [super hitTest:point withEvent:event];
+        if (v != self) {
+            return v;
+        }
+        return nil;
     }
-    return self;
+    return [super hitTest:point withEvent:event];
 }
 
 - (void)touchesBegan:(NSSet *)touches
@@ -787,6 +796,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (BOOL)shouldInteractAttachmentAtPoint:(CGPoint)point
 {
     NSDictionary *attachmentDict = [self attachmentAtLocation:point];
+    if (!attachmentDict) {
+        return false;
+    }
     BOOL shouldInteractAttachment = NO;
     if (attachmentDict && [self.delegate respondsToSelector:@selector(attributedLabel:shouldInteractWithTextAttachment:)]) {
         shouldInteractAttachment = [self.delegate attributedLabel:self shouldInteractWithTextAttachment:attachmentDict[NSAttachmentAttributeName]];
@@ -833,19 +845,10 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 #pragma mark - Helpers
 
-- (nullable NSDictionary<NSAttributedStringKey, id> *)attributesAtPoint:(CGPoint)location {
-    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [self _attributesAtPoint:location].mutableCopy;
-    if (attributes[DALinkAttributeName]) {
-        attributes[NSLinkAttributeName] = attributes[DALinkAttributeName];
-        [attributes removeObjectForKey:DALinkAttributeName];
-    }
-    return attributes;
-}
-
-- (nullable NSDictionary<NSAttributedStringKey, id> *)_attributesAtPoint:(CGPoint)location {
+- (BOOL)isLineRectContainsPoint:(CGPoint)location characterIndex:(NSUInteger *)characterIndexPointer {
     // Do nothing if we have no text
     if (self.textStorage.string.length == 0) {
-        return nil;
+        return false;
     }
     // Work out the offset of the text in the view
     CGPoint textOffset = [self calcGlyphsPositionInView];
@@ -858,6 +861,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     characterIndex = [self.layoutManager characterIndexForPoint:location
                                                 inTextContainer:self.textContainer
                        fractionOfDistanceBetweenInsertionPoints:NULL];
+    *characterIndexPointer = characterIndex;
 
     //有问题再放开
     NSUInteger glyphIndex = [self.layoutManager glyphIndexForCharacterAtIndex:characterIndex];
@@ -865,25 +869,65 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     lineRect.size.height -= [self layoutManager:self.layoutManager lineSpacingAfterGlyphAtIndex:glyphIndex withProposedLineFragmentRect:lineRect];
     //如果不在本行，直接返回
     if (!CGRectContainsPoint(lineRect, location)) {
+        return false;
+    }
+    if (characterIndex < self.attributedText.length) {
+        return true;
+    }
+    return false;
+}
+
+- (nullable NSDictionary<NSAttributedStringKey, id> *)attributesAtPoint:(CGPoint)location {
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [self _attributesAtPoint:location].mutableCopy;
+    if (attributes[DALinkAttributeName]) {
+        attributes[NSLinkAttributeName] = attributes[DALinkAttributeName];
+        [attributes removeObjectForKey:DALinkAttributeName];
+    }
+    return attributes;
+}
+
+- (nullable NSDictionary<NSAttributedStringKey, id> *)linkAttributesAtPoint:(CGPoint)location {
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [self _linkAttributesAtPoint:location].mutableCopy;
+    if (attributes[DALinkAttributeName]) {
+        attributes[NSLinkAttributeName] = attributes[DALinkAttributeName];
+        [attributes removeObjectForKey:DALinkAttributeName];
+    }
+    return attributes;
+}
+
+- (nullable NSDictionary<NSAttributedStringKey, id> *)_attributesAtPoint:(CGPoint)location {
+    NSUInteger characterIndex;
+    if (![self isLineRectContainsPoint:location characterIndex:&characterIndex]) {
         return nil;
     }
-    
-    if (characterIndex < self.textStorage.length) {
-        NSRange range;
-        NSMutableDictionary<NSAttributedStringKey, id> *value = [self.textStorage attributesAtIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)].mutableCopy;
-        if (!value) {
-            return nil;
-        }
-        value[kDAAttributedLabelRangeKey] = [NSValue valueWithRange:range];
-        return value;
+    NSRange range;
+    NSMutableDictionary<NSAttributedStringKey, id> *value = [self.textStorage attributesAtIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)].mutableCopy;
+    if (!value) {
+        return nil;
     }
-    return nil;
+    value[kDAAttributedLabelRangeKey] = [NSValue valueWithRange:range];
+    return value;
+}
+
+- (nullable NSDictionary<NSAttributedStringKey, id> *)_linkAttributesAtPoint:(CGPoint)location {
+    NSUInteger characterIndex;
+    if (![self isLineRectContainsPoint:location characterIndex:&characterIndex]) {
+        return nil;
+    }
+    NSRange range;
+    id value = [self.textStorage attribute:DALinkAttributeName atIndex:characterIndex longestEffectiveRange:&range inRange:NSMakeRange(0, self.textStorage.length)];
+    if (!value) {
+        return nil;
+    }
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [[self.textStorage attributedSubstringFromRange:range] attributesAtIndex:0 effectiveRange:nil].mutableCopy;
+    attributes[kDAAttributedLabelRangeKey] = [NSValue valueWithRange:range];
+    return attributes;
 }
 
 - (NSDictionary *)linkAtPoint:(CGPoint)location
 {
-    NSDictionary<NSAttributedStringKey, id> *attributes = [self _attributesAtPoint:location];
-    if (attributes[DALinkAttributeName] || attributes[NSLinkAttributeName]) {
+    NSDictionary<NSAttributedStringKey, id> *attributes = [self _linkAttributesAtPoint:location];
+    if (attributes[DALinkAttributeName]) {
         return attributes;
     }
     return nil;
