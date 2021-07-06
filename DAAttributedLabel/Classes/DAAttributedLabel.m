@@ -668,8 +668,10 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 {
     if ((![self linkAtPoint:point] && ![self shouldInteractAttachmentAtPoint:point]) || !self.userInteractionEnabled || self.hidden || self.alpha < 0.01 || ![self pointInside:point withEvent:event]) {
         for (UIGestureRecognizer *gesture in self.gestureRecognizers) {
-            if (gesture.isEnabled && [gesture isKindOfClass:[UITapGestureRecognizer class]]) {
-                return [super hitTest:point withEvent:event];
+            if (gesture.isEnabled) {
+                if ([gesture isKindOfClass:[UITapGestureRecognizer class]] || gesture == self.longPressGesture) {
+                    return [super hitTest:point withEvent:event];
+                }
             }
         }
         UIView *v = [super hitTest:point withEvent:event];
