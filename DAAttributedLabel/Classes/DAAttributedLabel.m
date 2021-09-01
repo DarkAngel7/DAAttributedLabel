@@ -874,7 +874,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     if (!CGRectContainsPoint(lineRect, location)) {
         return false;
     }
-    if (characterIndex < self.attributedText.length) {
+    if (characterIndex < self.textStorage.length) {
         return true;
     }
     return false;
