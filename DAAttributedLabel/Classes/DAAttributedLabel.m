@@ -714,7 +714,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         CGPoint location = [touch locationInView:self];
         if (![self pointInside:location withEvent:nil]) {
             self.activeLinkAttributes = nil;
-            self.selectedRange = NSMakeRange(0, 0);
+            [UIView transitionWithView:self duration:0.2 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+                self.selectedRange = NSMakeRange(0, 0);
+            } completion:nil];
             [super touchesEnded:touches withEvent:event];
             return;
         }
@@ -743,7 +745,9 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     self.isTouchMoved = NO;
     if (self.activeLinkAttributes) {
         self.activeLinkAttributes = nil;
-        self.selectedRange = NSMakeRange(0, 0);
+        [UIView transitionWithView:self duration:0.2 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
+            self.selectedRange = NSMakeRange(0, 0);
+        } completion:nil];
     } else {
         [super touchesCancelled:touches withEvent:event];
     }
@@ -755,13 +759,13 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         CGPoint location = [gesture locationInView:self];
         NSDictionary *linkAttributes = [self linkAtPoint:location];
         if (linkAttributes) {
-            if (self.activeLinkAttributes[NSAttachmentAttributeName]) {
-                if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapAttachment:)]) {
-                    [self.delegate attributedLabel:self didTapAttachment:self.activeLinkAttributes[NSAttachmentAttributeName]];
-                }
-            } else {
+            if (self.activeLinkAttributes[DALinkAttributeName]) {
                 if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
                     [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
+                }
+            } else if (self.activeLinkAttributes[NSAttachmentAttributeName]) {
+                if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapAttachment:)]) {
+                    [self.delegate attributedLabel:self didTapAttachment:self.activeLinkAttributes[NSAttachmentAttributeName]];
                 }
             }
         } else {
