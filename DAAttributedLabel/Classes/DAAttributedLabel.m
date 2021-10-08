@@ -720,20 +720,19 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         }
     }
     if (self.activeLinkAttributes) {
-        if (self.activeLinkAttributes[NSAttachmentAttributeName]) {
-            if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapAttachment:)]) {
-                [self.delegate attributedLabel:self didTapAttachment:self.activeLinkAttributes[NSAttachmentAttributeName]];
-            }
-        } else {
+        if (self.activeLinkAttributes[DALinkAttributeName]) {
             if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapLinkWithURL:)]) {
                 [self.delegate attributedLabel:self didTapLinkWithURL:self.activeLinkAttributes[DALinkAttributeName]];
             }
+        } else if (self.activeLinkAttributes[NSAttachmentAttributeName]) {
+            if ([self.delegate respondsToSelector:@selector(attributedLabel:didTapAttachment:)]) {
+                [self.delegate attributedLabel:self didTapAttachment:self.activeLinkAttributes[NSAttachmentAttributeName]];
+            }
         }
         self.activeLinkAttributes = nil;
-        //有时候高亮的时间太短，所以这里延迟撤销高亮
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.05 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [UIView transitionWithView:self duration:0.2 options:UIViewAnimationOptionTransitionCrossDissolve animations:^{
             self.selectedRange = NSMakeRange(0, 0);
-        });
+        } completion:nil];
     } else {
         [super touchesEnded:touches withEvent:event];
     }
