@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'DAAttributedLabel'
-  s.version          = '1.2.9'
+  s.version          = '1.3.0'
   s.summary          = 'A custom AttributedLabel using TextKit to replace UILabel.'
   s.description      = <<-DESC
   A custom AttributedLabel using TextKit to replace UILabel.

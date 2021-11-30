@@ -8,11 +8,13 @@
 #import "DAAttributedLabel.h"
 
 NSString *const DASelectedLinkBackgroundColorAttributeName = @"DASelectedLinkBackgroundColorAttributeName";
+NSString *const DABackgroundHeightAttributeName = @"DABackgroundHeightAttributeName";
 NSString *const DABackgroundColorAttributeName = @"DABackgroundColorAttributeName";
 NSString *const DABackgroundColorInsetsAttributeName = @"DABackgroundColorInsetsAttributeName";
 NSString *const DABackgroundColorCornerRadiusAttributeName = @"DABackgroundColorCornerRadiusAttributeName";
 NSString *const DAUnderlineSpacingAttributeName = @"DAUnderlineSpacingAttributeName";
 NSString *const DAUnderlineHeightAttributeName = @"DAUnderlineHeightAttributeName";
+NSString *const DAUnionTextAttributeName = @"DAUnionTextAttributeName";
 
 static NSString *const kDAAttributedLabelRangeKey = @"kDAAttributedLabelRangeKey";
 
@@ -20,13 +22,12 @@ static NSString *const DALinkAttributeName = @"DALinkAttributeName";
 
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
-@interface DAAttributedLabel () <DALayoutManagerDelegate>
 /**
  TextKit三件套
  */
 @property (nonatomic, strong) DALayoutManager *layoutManager;
 @property (nonatomic, strong) NSTextContainer *textContainer;
-@property (nonatomic, strong) NSTextStorage *textStorage;
+@property (nonatomic, strong) DATextStorage *textStorage;
 /**
  选中的range，一般用来处理链接高亮
  */
@@ -70,6 +71,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 - (void)initialize
 {
+    _shouldBreakUnionTextLine = YES;
     self.userInteractionEnabled = YES;
     self.customAttachmentViews = @[].mutableCopy;
     self.longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
@@ -104,7 +106,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     self.layoutManager.delegate = self;
     [self.layoutManager addTextContainer:self.textContainer];
     
-    self.textStorage = [[NSTextStorage alloc] init];
+    self.textStorage = [[DATextStorage alloc] init];
     [self.textStorage addLayoutManager:self.layoutManager];
 }
 
@@ -154,6 +156,11 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (void)setShouldBreakLinkLine:(BOOL)shouldBreakLinkLine
 {
     _shouldBreakLinkLine = shouldBreakLinkLine;
+    [self updateTextStorageWithText];
+}
+
+- (void)setShouldBreakUnionTextLine:(BOOL)shouldBreakUnionTextLine {
+    _shouldBreakUnionTextLine = shouldBreakUnionTextLine;
     [self updateTextStorageWithText];
 }
 
@@ -378,6 +385,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         self.selectedRange = NSMakeRange(0, 0);
     }
     [self.textStorage setAttributedString:attributedString];
+    
     if (!self.textStorage.length) {
         return;
     }
@@ -814,11 +822,44 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 #pragma mark - Layout manager delegate
 
+- (BOOL)layoutManager:(NSLayoutManager *)layoutManager shouldSetLineFragmentRect:(inout CGRect *)lineFragmentRect lineFragmentUsedRect:(inout CGRect *)lineFragmentUsedRect baselineOffset:(inout CGFloat *)baselineOffset inTextContainer:(NSTextContainer *)textContainer forGlyphRange:(NSRange)glyphRange {
+    if (![layoutManager isKindOfClass:DALayoutManager.class]) {
+        return NO;
+    }
+    DALayoutManager *manager = (DALayoutManager *)layoutManager;
+    if (manager.minimumLineHeight == 0) {
+        return NO;
+    }
+    CGRect rect = *lineFragmentRect;
+    CGFloat fontLineHeight = rect.size.height;
+    rect.size.height = MAX(manager.minimumLineHeight, rect.size.height);
+    *lineFragmentRect = rect;
+    
+    CGRect usedRect = *lineFragmentUsedRect;
+    usedRect.size.height = MAX(manager.minimumLineHeight, usedRect.size.height);
+    *lineFragmentUsedRect = usedRect;
+    
+    CGFloat baselineNudge = (manager.minimumLineHeight - fontLineHeight) * 0.6;
+    CGFloat offset = *baselineOffset + baselineNudge;
+    *baselineOffset = offset;
+    return YES;
+}
+
 - (BOOL)layoutManager:(NSLayoutManager *)layoutManager shouldBreakLineByWordBeforeCharacterAtIndex:(NSUInteger)charIndex
 {
-    NSRange range;
-    NSURL *linkURL = [layoutManager.textStorage attribute:DALinkAttributeName atIndex:charIndex effectiveRange:&range];
-    return !self.shouldBreakLinkLine && !(linkURL && (charIndex > range.location) && (charIndex <= NSMaxRange(range)));
+    if (self.shouldBreakUnionTextLine) {
+        NSRange linkRange;
+        NSURL *linkURL = [layoutManager.textStorage attribute:DALinkAttributeName atIndex:charIndex effectiveRange:&linkRange];
+        return !self.shouldBreakLinkLine && !(linkURL && (charIndex > linkRange.location) && (charIndex <= NSMaxRange(linkRange)));
+    }
+    __block BOOL shouldBreak = NO;
+    [layoutManager.textStorage enumerateAttribute:DAUnionTextAttributeName inRange:NSMakeRange(0, layoutManager.textStorage.length) options:NSAttributedStringEnumerationReverse usingBlock:^(id  _Nullable value, NSRange range, BOOL * _Nonnull stop) {
+        if (value && charIndex == range.location) {
+            *stop = YES;
+            shouldBreak = YES;
+        }
+    }];
+    return shouldBreak;
 }
 
 - (CGFloat)layoutManager:(NSLayoutManager *)layoutManager lineSpacingAfterGlyphAtIndex:(NSUInteger)glyphIndex withProposedLineFragmentRect:(CGRect)rect
@@ -1046,6 +1087,62 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @end
 
+
+#pragma mark - DATextStorage
+
+@interface DATextStorage ()
+
+@property (nonatomic, strong) NSMutableAttributedString *backingStore;
+
+@end
+
+@implementation DATextStorage
+
+- (instancetype)init {
+    if (self = [super init]) {
+        self.backingStore = [NSTextStorage new];
+    }
+    return self;
+}
+
+- (NSString *)string {
+    return [self.backingStore string];
+}
+
+- (NSDictionary *)attributesAtIndex:(NSUInteger)location
+                     effectiveRange:(NSRangePointer)range {
+    return [self.backingStore attributesAtIndex:location
+                                 effectiveRange:range];
+}
+
+- (void)replaceCharactersInRange:(NSRange)range withString:(NSString *)str {
+    [self beginEditing];
+    [self.backingStore replaceCharactersInRange:range withString:str];
+    [self edited:NSTextStorageEditedCharacters
+           range:range
+  changeInLength:(NSInteger)str.length - (NSInteger)range.length];
+    [self endEditing];
+}
+
+- (void)setAttributes:(NSDictionary *)attrs range:(NSRange)range {
+    [self beginEditing];
+    [self.backingStore setAttributes:attrs range:range];
+    [self edited:NSTextStorageEditedAttributes range:range changeInLength:0];
+    [self endEditing];
+}
+
+- (void)processEditing {
+    [super processEditing];
+}
+
+- (void)fixAttributesInRange:(NSRange)range {
+    [super fixAttributesInRange:range];
+}
+
+@end
+
+#pragma mark - DALayoutManager
+
 @implementation DALayoutManager
 
 @dynamic delegate;
@@ -1058,6 +1155,12 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 - (id<DALayoutManagerDelegate>)delegate
 {
     return (id<DALayoutManagerDelegate>)[super delegate];
+}
+
+- (void)setExtraLineFragmentRect:(CGRect)fragmentRect usedRect:(CGRect)usedRect textContainer:(NSTextContainer *)container {
+    fragmentRect.size.height = MAX(self.minimumLineHeight, fragmentRect.size.height);
+    usedRect.size.height = MAX(self.minimumLineHeight, usedRect.size.height);
+    [super setExtraLineFragmentRect:fragmentRect usedRect:usedRect textContainer:container];
 }
 
 /**
@@ -1102,11 +1205,18 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
                 NSRange glyphRange = [self glyphRangeForCharacterRange:range actualCharacterRange:nil];
                 NSMutableArray *rects = @[].mutableCopy;
                 [self enumerateEnclosingRectsForGlyphRange:glyphRange withinSelectedGlyphRange:NSMakeRange(NSNotFound, 0) inTextContainer:self.textContainers.firstObject usingBlock:^(CGRect rect, BOOL * _Nonnull stop) {
-                    rect.origin.x += origin.x;
-                    rect.origin.y += origin.y;
-                    [rects addObject:[NSValue valueWithCGRect:rect]];
+                    __block CGRect glyphRect = rect;
+                    glyphRect.origin.x += origin.x;
+                    glyphRect.origin.y += origin.y;
+                    [rects addObject:[NSValue valueWithCGRect:glyphRect]];
                 }];
-                [self fillBackgroundRectArray:rects forCharacterRange:range color:value rectCornerRadius:[self backgroundColorCornerRadiusForRange:range] rectInset:[self backgroundColorInsetsForRange:range]];
+                [self fillBackgroundRectArray:rects
+                            forCharacterRange:range
+                                        color:value
+                             rectCornerRadius:[self backgroundColorCornerRadiusForRange:range]
+                                    rectInset:[self backgroundColorInsetsForRange:range]
+                                   rectHeight:[self backgroundHeightForRange:range]
+                ];
             }
         }];
     }
@@ -1152,7 +1262,12 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 /**
  Custom draw method
  */
-- (void)fillBackgroundRectArray:(NSArray *)rectArray forCharacterRange:(NSRange)charRange color:(UIColor *)color rectCornerRadius:(CGFloat)cornerRadius rectInset:(UIEdgeInsets)rectInset
+- (void)fillBackgroundRectArray:(NSArray *)rectArray
+              forCharacterRange:(NSRange)charRange
+                          color:(UIColor *)color
+               rectCornerRadius:(CGFloat)cornerRadius
+                      rectInset:(UIEdgeInsets)rectInset
+                     rectHeight:(CGFloat)rectHeight
 {
     [color set];
     CGRect rect;
@@ -1160,6 +1275,8 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     UIRectCorner roundingCorner;
     CGSize size;
     for (NSUInteger i = 0; i < rectArray.count; i++) {
+        BOOL shouldAddInsetLeft = YES;
+        BOOL shouldAddInsetRight = YES;
         rect = [rectArray[i] CGRectValue];
         size = CGSizeMake(cornerRadius, cornerRadius);
         if (rectArray.count == 1) {
@@ -1167,20 +1284,33 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
         }else{
             if (i == 0) {
                 roundingCorner = UIRectCornerTopLeft | UIRectCornerBottomLeft;
+                shouldAddInsetRight = NO;
             }else if(i < rectArray.count - 1){
                 roundingCorner = UIRectCornerAllCorners;
                 size = CGSizeZero;
+                shouldAddInsetLeft = NO;
+                shouldAddInsetRight = NO;
             }else{
                 roundingCorner = UIRectCornerTopRight | UIRectCornerBottomRight;
+                shouldAddInsetLeft = NO;
             }
         }
         if ([self.delegate respondsToSelector:@selector(layoutManager:lineSpacingAfterGlyphAtIndex:withProposedLineFragmentRect:)]) {
             rect.size.height -= [self.delegate layoutManager:self lineSpacingAfterGlyphAtIndex:charRange.location withProposedLineFragmentRect:rect];
         }
-        rect.origin.x -= rectInset.left;
+        CGFloat insetLeft = shouldAddInsetLeft ? rectInset.left : 0;
+        CGFloat insetRight = shouldAddInsetRight ? rectInset.right : 0;
+        rect.origin.x -= insetLeft;
         rect.origin.y -= rectInset.top;
-        rect.size.width = MAX(0, rect.size.width + rectInset.left + rectInset.right);
+        rect.size.width = MAX(0, rect.size.width + insetLeft + insetRight);
         rect.size.height = MAX(0, rect.size.height + rectInset.top + rectInset.bottom);
+        if (rectHeight > 0) {
+            if (rectHeight < rect.size.height) {
+                CGFloat lastHeight = rect.size.height;
+                rect.size.height = rectHeight;
+                rect.origin.y += (lastHeight - rectHeight) / 2;
+            }
+        }
         path = [UIBezierPath bezierPathWithRoundedRect:CGRectIntegral(rect) byRoundingCorners:roundingCorner cornerRadii:size];
         [path fill];
     }
@@ -1227,6 +1357,20 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     return cornerRadius;
 }
 
+- (CGFloat)backgroundHeightForRange:(NSRange)range
+{
+    CGFloat height = 0;
+    id value = [self.textStorage attribute:DABackgroundHeightAttributeName atIndex:range.location longestEffectiveRange:nil inRange:range];
+    if (value && [value isKindOfClass:[NSValue class]]) {
+#if CGFLOAT_IS_DOUBLE
+        height = [value doubleValue];
+#else
+        height = [value floatValue];
+#endif
+    }
+    return height;
+}
+
 @end
 
 @implementation DATextAttachment
@@ -1257,20 +1401,20 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     rect.origin.x = 0;
     switch (self.lineAlignment) {
         case DATextAttachmentLineAlignmentTop:
-            rect.origin.y = 0;
+            rect.origin.y = -_contentInset.top;
             break;
         case DATextAttachmentLineAlignmentMiddle:
             if (rect.size.height >= lineFrag.size.height) {
-                rect.origin.y = 0;
+                rect.origin.y = -_contentInset.top;
             } else {
-                rect.origin.y = (lineFrag.size.height - rect.size.height) / 2;
+                rect.origin.y = -(lineFrag.size.height - rect.size.height) / 2;
             }
             break;
         case DATextAttachmentLineAlignmentBottom:
             if (rect.size.height >= lineFrag.size.height) {
-                rect.origin.y = 0;
+                rect.origin.y = -_contentInset.top;
             } else {
-                rect.origin.y = lineFrag.size.height - rect.size.height;
+                rect.origin.y = -(lineFrag.size.height - rect.size.height + _contentInset.bottom);
             }
             break;
         default:

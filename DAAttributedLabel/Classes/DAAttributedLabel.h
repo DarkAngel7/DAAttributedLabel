@@ -59,7 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - DAAttributedLabel
 
-@class DALayoutManager;
+@class DALayoutManager, DATextStorage;
 /**
  富文本label
  */
@@ -101,6 +101,10 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, assign, getter=isShouldBreakLinkLine) IBInspectable BOOL shouldBreakLinkLine;
 /**
+ UnionText是否在换行时被截断。  default is YES
+ */
+@property (nonatomic, assign, getter=isShouldBreakUnionTextLine) IBInspectable BOOL shouldBreakUnionTextLine;
+/**
  行间距，可能会与NSAttributedString的lineSpacing冲突，一般后设置的生效
  */
 @property (nonatomic, assign) IBInspectable CGFloat lineSpacing;
@@ -117,7 +121,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, strong, readonly) DALayoutManager *layoutManager;
 @property (nonatomic, strong, readonly) NSTextContainer *textContainer;
-@property (nonatomic, strong, readonly) NSTextStorage *textStorage;
+@property (nonatomic, strong, readonly) DATextStorage *textStorage;
 /**
  选中的range，一般用来处理链接高亮
  */
@@ -130,6 +134,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary<NSAttributedStringKey, id> *)attributesAtPoint:(CGPoint)location;
 - (nullable NSDictionary<NSAttributedStringKey, id> *)linkAttributesAtPoint:(CGPoint)location;
 - (nullable NSDictionary<NSAttributedStringKey, id> *)attachmentAtLocation:(CGPoint)location;
+
+@end
+
+#pragma mark - DATextStorage
+
+@interface DATextStorage: NSTextStorage
+
+@property (nonatomic, strong, readonly) NSMutableAttributedString *backingStore;
 
 @end
 
@@ -163,6 +175,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, weak) id<DALayoutManagerDelegate> delegate;
 
+@property (nonatomic, assign) CGFloat minimumLineHeight;
+
 @end
 
 #pragma mark - DATextAttachment
@@ -186,6 +200,8 @@ typedef NS_ENUM(NSUInteger, DATextAttachmentLineAlignment) {
 @property (nonatomic, assign) CGSize viewSize;
 
 @property (nonatomic, assign) DATextAttachmentLineAlignment lineAlignment;
+
+@property (nonatomic, assign) UIEdgeInsets contentInset;
 /**
  快速创建一个自定义UIView附件
 
@@ -198,16 +214,21 @@ typedef NS_ENUM(NSUInteger, DATextAttachmentLineAlignment) {
 @end
 
 ///选中的链接背景色，有默认值
-extern NSAttributedStringKey const DASelectedLinkBackgroundColorAttributeName;
+extern NSAttributedStringKey const DASelectedLinkBackgroundColorAttributeName NS_SWIFT_NAME(selectedLinkBackgroundColor);
+///背景色高度，不包含行间距的
+extern NSAttributedStringKey const DABackgroundHeightAttributeName NS_SWIFT_NAME(backgroundHeight);
 ///背景色属性，不包含行间距的，如果包含行间距，请使用NSBackgroudColorAttributeName
-extern NSAttributedStringKey const DABackgroundColorAttributeName;
+extern NSAttributedStringKey const DABackgroundColorAttributeName NS_SWIFT_NAME(backgroundNoSpacingColor);
 ///背景色大小inset，默认是zero
-extern NSAttributedStringKey const DABackgroundColorInsetsAttributeName;
+extern NSAttributedStringKey const DABackgroundColorInsetsAttributeName NS_SWIFT_NAME(backgroundColorInsets);
 ///背景色圆角，默认是3
-extern NSAttributedStringKey const DABackgroundColorCornerRadiusAttributeName;
+extern NSAttributedStringKey const DABackgroundColorCornerRadiusAttributeName NS_SWIFT_NAME(backgroundColorCornerRadius);
 ///Underline Height
-extern NSAttributedStringKey const DAUnderlineHeightAttributeName;
+extern NSAttributedStringKey const DAUnderlineHeightAttributeName NS_SWIFT_NAME(underlineHeight);
 ///Underline Spacing
-extern NSAttributedStringKey const DAUnderlineSpacingAttributeName;
+extern NSAttributedStringKey const DAUnderlineSpacingAttributeName NS_SWIFT_NAME(underlineSpacing);
+
+extern NSAttributedStringKey const DAUnionTextAttributeName NS_SWIFT_NAME(unionText);
+
 
 NS_ASSUME_NONNULL_END
