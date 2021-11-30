@@ -21,6 +21,7 @@ static NSString *const kDAAttributedLabelRangeKey = @"kDAAttributedLabelRangeKey
 static NSString *const DALinkAttributeName = @"DALinkAttributeName";
 
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
+
 @interface DAAttributedLabel () <DALayoutManagerDelegate>
 /**
  TextKit三件套
