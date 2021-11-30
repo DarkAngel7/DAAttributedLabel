@@ -23,9 +23,7 @@ static NSString *const DALinkAttributeName = @"DALinkAttributeName";
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @interface DAAttributedLabel () <DALayoutManagerDelegate>
-/**
- TextKit三件套
- */
+/// TextKit三件套
 @property (nonatomic, strong) DALayoutManager *layoutManager;
 @property (nonatomic, strong) NSTextContainer *textContainer;
 @property (nonatomic, strong) DATextStorage *textStorage;
@@ -48,6 +46,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 @property (nonatomic, strong) NSMutableArray *customAttachmentViews;
 
 @end
+
 
 @implementation DAAttributedLabel
 
