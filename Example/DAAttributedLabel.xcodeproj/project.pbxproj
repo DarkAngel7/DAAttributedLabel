@@ -247,9 +247,10 @@
 				ORGANIZATIONNAME = DarkAngel;
 				TargetAttributes = {
 					6003F589195388D20070C39A = {
-						DevelopmentTeam = 6692A4G2A3;
+						DevelopmentTeam = 5TE8D5RAN4;
 					};
 					6003F5AD195388D20070C39A = {
+						DevelopmentTeam = 5TE8D5RAN4;
 						TestTargetID = 6003F589195388D20070C39A;
 					};
 				};
@@ -499,7 +500,7 @@
 			baseConfigurationReference = 4524E80F2C322B2735A32DBF /* Pods-DAAttributedLabel_Example.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = 6692A4G2A3;
+				DEVELOPMENT_TEAM = 5TE8D5RAN4;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "DAAttributedLabel/DAAttributedLabel-Prefix.pch";
 				INFOPLIST_FILE = "DAAttributedLabel/DAAttributedLabel-Info.plist";
@@ -533,6 +534,7 @@
 			baseConfigurationReference = C570F873CBAC89C7F9470CFE /* Pods-DAAttributedLabel_Tests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = 5TE8D5RAN4;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -557,6 +559,7 @@
 			baseConfigurationReference = 3AE5FAEEC12B0C0308D73519 /* Pods-DAAttributedLabel_Tests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = 5TE8D5RAN4;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
