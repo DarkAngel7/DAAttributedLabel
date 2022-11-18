@@ -23,10 +23,12 @@ static NSString *const DALinkAttributeName = @"DALinkAttributeName";
 static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @interface DAAttributedLabel () <DALayoutManagerDelegate>
-/// TextKit三件套
+/**
+ TextKit三件套
+ */
 @property (nonatomic, strong) DALayoutManager *layoutManager;
 @property (nonatomic, strong) NSTextContainer *textContainer;
-@property (nonatomic, strong) DATextStorage *textStorage;
+@property (nonatomic, strong) NSTextStorage *textStorage;
 /**
  选中的range，一般用来处理链接高亮
  */
@@ -46,7 +48,6 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 @property (nonatomic, strong) NSMutableArray *customAttachmentViews;
 
 @end
-
 
 @implementation DAAttributedLabel
 
@@ -106,7 +107,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
     self.layoutManager.delegate = self;
     [self.layoutManager addTextContainer:self.textContainer];
     
-    self.textStorage = [[DATextStorage alloc] init];
+    self.textStorage = [[NSTextStorage alloc] init];
     [self.textStorage addLayoutManager:self.layoutManager];
 }
 
@@ -1087,7 +1088,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 
 @end
 
-
+/*
 #pragma mark - DATextStorage
 
 @interface DATextStorage ()
@@ -1140,6 +1141,7 @@ static CGFloat const kDefaultBackgroundColorCornerRadius = 3;
 }
 
 @end
+ */
 
 #pragma mark - DALayoutManager
 

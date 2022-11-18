@@ -59,7 +59,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - DAAttributedLabel
 
-@class DALayoutManager, DATextStorage;
+@class DALayoutManager;
+//@class DATextStorage;
 /**
  富文本label
  */
@@ -121,7 +122,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic, strong, readonly) DALayoutManager *layoutManager;
 @property (nonatomic, strong, readonly) NSTextContainer *textContainer;
-@property (nonatomic, strong, readonly) DATextStorage *textStorage;
+@property (nonatomic, strong, readonly) NSTextStorage *textStorage;
 /**
  选中的range，一般用来处理链接高亮
  */
@@ -137,6 +138,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+/*
 #pragma mark - DATextStorage
 
 @interface DATextStorage: NSTextStorage
@@ -144,6 +146,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) NSMutableAttributedString *backingStore;
 
 @end
+ */
 
 #pragma mark - DALayoutManagerDelegate
 
